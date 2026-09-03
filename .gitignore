@@ -5,3 +5,6 @@ out/
 .DS_Store
 *.tsbuildinfo
 .wrangler/
+out-sentinela/
+test-results/
+playwright-report/
