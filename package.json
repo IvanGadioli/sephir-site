@@ -9,7 +9,8 @@
     "typecheck": "tsc -p tsconfig.tests.json --noEmit",
     "build": "next build && node ferramentas/podar.mjs",
     "build:sentinela": "PREFIXO=/__pfx next build && node ferramentas/podar.mjs && rm -rf out-sentinela && mv out out-sentinela",
-    "verificar": "node ferramentas/verificar.mjs"
+    "verificar": "node ferramentas/verificar.mjs",
+    "verificar:visual": "node ferramentas/visual.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
