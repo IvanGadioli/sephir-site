@@ -5,6 +5,12 @@
 import { IDIOMAS, type Idioma } from '../../../lib/rotas';
 import { Lockup } from '../../../components/Lockup';
 import { SeloFase } from '../../../components/SeloFase';
+import type { Metadata } from 'next';
+
+
+export const metadata: Metadata = {
+  title: 'Iniciativa Sephir — Simulação física do cosmos, jogável.',
+};
 
 export function generateStaticParams() {
   return IDIOMAS.map((lang) => ({ lang }));

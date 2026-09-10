@@ -3,6 +3,12 @@
 // português e um link para a home — o que o 404 nativo do Next não tem.
 // Cores só por var(--...) de styles/tokens.css (skill `marca-sephir`).
 import { caminho } from '../../../lib/caminho';
+import type { Metadata } from 'next';
+
+
+export const metadata: Metadata = {
+  title: 'Página não encontrada — Iniciativa Sephir',
+};
 
 export default function NaoEncontrado() {
   return (
