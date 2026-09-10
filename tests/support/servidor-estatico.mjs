@@ -10,11 +10,18 @@
 //   /pt/           -> 200, out/pt/index.html
 //   /pt            -> 301 para /pt/
 //   caminho ausente-> 404, corpo de out/404.html
+//   Accept-Encoding: br   -> content-encoding: br, qualidade 11  (preferido)
 //   Accept-Encoding: gzip -> content-encoding: gzip, nível 9
+//
+// Brotli é a codificação de referência desde `adr-fab-006`: o orçamento de
+// peso existe para limitar o que o visitante baixa, e o Cloudflare Pages serve
+// brotli. Medir gzip -9 media um proxy conservador que reprovava o que o fio
+// aprova. Brotli é preferido quando o cliente aceita os dois — que é o caso do
+// Chrome, e portanto do Lighthouse.
 //   sem out/       -> sobe assim mesmo e responde 404 em tudo
 
 import { createServer } from 'node:http';
-import { gzipSync } from 'node:zlib';
+import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
 import { existsSync } from 'node:fs';
 import { readFile as readFileAsync } from 'node:fs/promises';
 import { join, extname } from 'node:path';
@@ -36,12 +43,17 @@ function tipoDe(caminho) {
   return TIPOS[extname(caminho)] ?? 'application/octet-stream';
 }
 
-function enviar(res, status, corpo, tipo, aceitaGzip, cabecalhosExtra = {}) {
+function enviar(res, status, corpo, tipo, codificacao, cabecalhosExtra = {}) {
   const buf = typeof corpo === 'string' ? Buffer.from(corpo, 'utf8') : corpo;
   const cabecalhos = { 'content-type': tipo, ...cabecalhosExtra };
-  if (aceitaGzip) {
-    const comprimido = gzipSync(buf, { level: 9 });
-    cabecalhos['content-encoding'] = 'gzip';
+  if (codificacao) {
+    const comprimido =
+      codificacao === 'br'
+        ? brotliCompressSync(buf, {
+            params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },
+          })
+        : gzipSync(buf, { level: 9 });
+    cabecalhos['content-encoding'] = codificacao;
     cabecalhos['content-length'] = String(comprimido.length);
     res.writeHead(status, cabecalhos);
     res.end(comprimido);
@@ -63,7 +75,14 @@ async function tentarLer(caminho) {
 export function criarServidor({ raiz, porta = 4173 }) {
   return new Promise((resolve, reject) => {
     const servidor = createServer(async (req, res) => {
-      const aceitaGzip = (req.headers['accept-encoding'] ?? '').includes('gzip');
+      // brotli antes de gzip: é o que o Cloudflare entrega quando o cliente
+      // aceita os dois, e é a codificação de referência (`adr-fab-006`).
+      const aceita = String(req.headers['accept-encoding'] ?? '');
+      const aceitaGzip = aceita.includes('br')
+        ? 'br'
+        : aceita.includes('gzip')
+          ? 'gzip'
+          : null;
       const urlBruta = req.url ?? '/';
       const semQuery = urlBruta.split('?')[0].split('#')[0];
 

@@ -23,13 +23,13 @@
 //   Lighthouse.
 // - Resposta sem `content-encoding` ⇒ `codigo:3`, nunca 1. Byte cru contra
 //   teto comprimido é medir outra coisa. `semCompressao:true` força esse
-//   caminho: pede a página sem aceitar gzip, e a origem (que só comprime
+//   caminho: pede a página sem aceitar codificação, e a origem (que só comprime
 //   quando o pedido aceita) devolve sem o cabeçalho.
 
 import { createRequire } from 'node:module';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import { gunzipSync } from 'node:zlib';
+import { gunzipSync, brotliDecompressSync } from 'node:zlib';
 import { accessSync, constants as fsConstants } from 'node:fs';
 
 const require = createRequire(import.meta.url);
@@ -92,7 +92,7 @@ function buscarPagina(destino, semCompressao) {
     const requisitar = alvo.protocol === 'https:' ? httpsRequest : httpRequest;
     const req = requisitar(
       alvo,
-      { headers: { 'accept-encoding': semCompressao ? 'identity' : 'gzip' } },
+      { headers: { 'accept-encoding': semCompressao ? 'identity' : 'br, gzip' } },
       (res) => {
         const pedacos = [];
         res.on('data', (p) => pedacos.push(p));
@@ -101,7 +101,12 @@ function buscarPagina(destino, semCompressao) {
           const codificacao = res.headers['content-encoding'] ?? null;
           let texto;
           try {
-            texto = codificacao === 'gzip' ? gunzipSync(bruto).toString('utf8') : bruto.toString('utf8');
+            texto =
+              codificacao === 'br'
+                ? brotliDecompressSync(bruto).toString('utf8')
+                : codificacao === 'gzip'
+                  ? gunzipSync(bruto).toString('utf8')
+                  : bruto.toString('utf8');
           } catch {
             texto = bruto.toString('utf8');
           }
