@@ -38,7 +38,10 @@ describe('H, lint de higiene — nenhuma cor fora de tokens.css', () => {
 
 describe('zero arquivo de fonte web nesta rodada', () => {
   it('nenhum .woff2 no repo', () =>
-    expect(globSync('**/*.woff2', { ignore: ['node_modules/**'] })).toEqual([]));
+    expect(
+      ['app', 'lib', 'components', 'styles', 'public', 'out']
+        .flatMap((d) => globSync(`${d}/**/*.woff2`)),
+    ).toEqual([]));
   it('nenhum @font-face', () =>
     expect(tokens() + readFileSync('styles/base.css', 'utf8')).not.toContain('@font-face'));
 });

@@ -2,7 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 const home = () => readFileSync('out/pt/index.html', 'utf8');
-const h1 = () => home().match(/<h1[^>]*>(.*?)<\/h1>/s)?.[1].replace(/<[^>]*>/g, '');
+// h1() LANÇA quando não há <h1>, em vez de devolver ''. Devolver string vazia
+// faz as três asserções negativas abaixo passarem por vacuidade — sem <h1>
+// nenhum, '' de fato não contém 'Semente Cósmica'. Verde por ausência é o
+// modo de falha que este portão inteiro existe para não cometer.
+const h1 = () => {
+  const m = home().match(/<h1[^>]*>(.*?)<\/h1>/s);
+  if (!m?.[1]) throw new Error('nenhum <h1> em out/pt/index.html');
+  return m[1].replace(/<[^>]*>/g, '');
+};
 
 describe('K — a nomenclatura travada em 30/07/2026', () => {
   it('o <h1> estampa o produto', () => expect(h1()).toContain('Iniciativa Sephir'));

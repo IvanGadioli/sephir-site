@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFileSync, execFileSync as run } from 'node:child_process';
-import { renameSync } from 'node:fs';
+import { renameSync, existsSync } from 'node:fs';
 
 const verificar = (env = {}) => {
   try {
@@ -30,8 +30,15 @@ describe('o contrato de comando de verificar', () => {
   });
   it('não builda por conta própria', () => {
     renameSync('out', 'out-guardada');
-    try { expect(verificar().saida).not.toContain('Creating an optimized production build'); }
-    finally { renameSync('out-guardada', 'out'); }
+    try {
+      const r = verificar();
+      // o código e a ausência de out/ entram junto de propósito: sozinha, a
+      // asserção de que a saída não fala em build passa porque verificar.mjs
+      // ainda nem existe — verde por ausência do próprio comando medido.
+      expect(r.codigo).toBe(2);
+      expect(existsSync('out')).toBe(false);
+      expect(r.saida).not.toContain('Creating an optimized production build');
+    } finally { renameSync('out-guardada', 'out'); }
   });
   it('imprime o bloco do que não mediu, com os onze itens', () => {
     const r = verificar();

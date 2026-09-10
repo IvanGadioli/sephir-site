@@ -1,0 +1,24 @@
+{
+  // O programa de tipos dos testes, separado do de produção de propósito.
+  //
+  // `next build` checa `tsconfig.json`, que agora alcança só `app/` e `lib/`.
+  // Sem essa separação, um teste de tarefa futura — que importa um módulo que
+  // ainda não existe — trava o build inteiro, e a saída mais fácil vira
+  // `typescript: { ignoreBuildErrors: true }` no `next.config.ts`, que desliga
+  // a checagem do código de produção junto e não avisa mais nunca.
+  //
+  // Rode `npm run typecheck` para checar os testes.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "node"]
+  },
+  "include": [
+    "lib",
+    "app",
+    "tests",
+    "ferramentas",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    ".next/types/**/*.ts"
+  ]
+}
