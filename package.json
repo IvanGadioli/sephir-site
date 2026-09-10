@@ -6,8 +6,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "build": "next build",
-    "build:sentinela": "PREFIXO=/__pfx IDIOMAS=pt,en next build"
+    "build": "next build && node ferramentas/podar.mjs",
+    "build:sentinela": "PREFIXO=/__pfx next build && node ferramentas/podar.mjs && rm -rf out-sentinela && mv out out-sentinela"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
