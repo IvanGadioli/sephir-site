@@ -2,6 +2,8 @@
 // cada grupo de rota carrega seu próprio <html>/<body>, o que faz `lang`
 // derivar do segmento em vez de ser fixo (defeito medido na rodada 01).
 import type { ReactNode } from 'react';
+import '../../styles/tokens.css';
+import '../../styles/base.css';
 
 export default function CascaLayout({ children }: { children: ReactNode }) {
   return (

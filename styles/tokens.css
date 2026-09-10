@@ -1,0 +1,79 @@
+/*
+ * tokens.css — cópia literal de theme.ts (marca-sephir).
+ *
+ * Fonte única de verdade: ~/Documents/sephir/sephir-brand/00-identidade/tokens/theme.ts
+ * Não editar valores aqui sem antes mudar theme.ts. Ver skill `marca-sephir`.
+ */
+
+:root {
+  /* Cores — superfícies (fundo → elevação) */
+  --cor-void: #05070E;
+  --cor-void2: #0C1220;
+  --cor-void3: #141C30;
+
+  /* Cores — acentos (nebulosa) */
+  --cor-amber: #E8963A;
+  --cor-amber-dim: #C77A28;
+  --cor-teal: #3FB89E;
+  --cor-teal-dim: #329680;
+
+  /* Cores — texto */
+  --cor-stardust: #F4EFE6;
+  --cor-muted: #8A93A8;
+  --cor-faint: #4A5468;
+
+  /* Cores — utilitário (stardust em alfa) */
+  --cor-border: rgba(244, 239, 230, 0.10);
+  --cor-border-strong: rgba(244, 239, 230, 0.18);
+
+  /* Famílias de fonte */
+  --fonte-display: 'Space Grotesk', system-ui, sans-serif;
+  --fonte-body: 'Inter', system-ui, sans-serif;
+  --fonte-mono: 'Space Mono', ui-monospace, monospace;
+
+  /* Escala tipográfica */
+  --tipo-hero-tamanho: clamp(2.5rem, 7vw, 4.5rem);
+  --tipo-hero-peso: 500;
+  --tipo-hero-altura: 1.05;
+  --tipo-hero-tracking: -0.02em;
+
+  --tipo-h1-tamanho: clamp(2rem, 4vw, 3rem);
+  --tipo-h1-peso: 500;
+  --tipo-h1-altura: 1.1;
+  --tipo-h1-tracking: -0.01em;
+
+  --tipo-h2-tamanho: clamp(1.5rem, 3vw, 2rem);
+  --tipo-h2-peso: 500;
+  --tipo-h2-altura: 1.2;
+  --tipo-h2-tracking: 0;
+
+  --tipo-body-tamanho: 1.0625rem;
+  --tipo-body-peso: 400;
+  --tipo-body-altura: 1.7;
+  --tipo-body-tracking: 0;
+
+  --tipo-small-tamanho: 0.875rem;
+  --tipo-small-peso: 400;
+  --tipo-small-altura: 1.6;
+  --tipo-small-tracking: 0;
+
+  --tipo-label-tamanho: 0.75rem;
+  --tipo-label-peso: 400;
+  --tipo-label-altura: 1.4;
+  --tipo-label-tracking: 0.18em;
+
+  /* Espaçamento */
+  --espaco-xs: 0.5rem;
+  --espaco-sm: 0.75rem;
+  --espaco-md: 1rem;
+  --espaco-lg: 1.5rem;
+  --espaco-xl: 2.5rem;
+  --espaco-xxl: 4rem;
+  --espaco-section: 6rem;
+
+  /* Raio */
+  --raio-sm: 8px;
+  --raio-md: 12px;
+  --raio-lg: 16px;
+  --raio-pill: 999px;
+}

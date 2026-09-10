@@ -1,0 +1,15 @@
+/*
+ * base.css — aplica os tokens de tokens.css. Nenhum valor literal aqui:
+ * só var(--...). Ver skill `marca-sephir` e adr-fab-005.
+ */
+
+body {
+  background-color: var(--cor-void);
+  color: var(--cor-stardust);
+  font-family: var(--fonte-body);
+}
+
+h1,
+h2 {
+  font-family: var(--fonte-display);
+}
