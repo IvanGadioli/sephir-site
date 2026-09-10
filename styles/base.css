@@ -3,6 +3,26 @@
  * só var(--...). Ver skill `marca-sephir` e adr-fab-005.
  */
 
+/*
+ * O `color` começa no elemento raiz, não no `body`.
+ *
+ * Sem isso, `<html>` cai no preto padrão do navegador, e toda propriedade que
+ * resolve por `currentColor` quando não declarada — `border-*-color`,
+ * `outline-color`, `text-decoration-color`, `caret-color`, `column-rule-color`
+ * — herda esse preto. Nenhuma delas pinta pixel nenhum aqui, mas o W9 lê CSS
+ * computado, e `rgb(0, 0, 0)` não é um dos dez matizes: dava 83 violações,
+ * todas no `<html>`.
+ *
+ * O catálogo do W9 assume exatamente isto ao dizer que essas propriedades
+ * "herdam de graça a conformidade que a checagem de `color` já garante" — a
+ * premissa só vale se algum ancestral tiver `color` da paleta, e no elemento
+ * raiz não há de quem herdar. Achado da Tarefa 8.
+ */
+html {
+  background-color: var(--cor-void);
+  color: var(--cor-stardust);
+}
+
 body {
   background-color: var(--cor-void);
   color: var(--cor-stardust);
