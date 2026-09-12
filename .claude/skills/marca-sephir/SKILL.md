@@ -70,12 +70,20 @@ contagem certa.
 | Token | Valor | Uso |
 |---|---|---|
 | `display` | `'Space Grotesk', system-ui, sans-serif` | títulos, wordmark |
-| `body` | `'Inter', system-ui, sans-serif` | corpo, UI |
+| `body` | `system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif` | corpo, UI |
 | `mono` | `'Space Mono', ui-monospace, monospace` | labels técnicos, TRL, dados |
 
-**O corpo do texto é Inter, não Space Grotesk.** Space Grotesk é só para título
-e wordmark (`display`). Quem escreve `font-family: 'Space Grotesk'` num
-parágrafo de corpo errou o token.
+**O corpo do texto é a pilha de sistema, não Space Grotesk** — decisão do
+titular em `adr-fab-008` (2026-09-12), aceitando o que o mock aprovado sempre
+declarou. `Inter` **saiu da marca**; se você a tem na memória de uma versão
+anterior desta skill, a memória está velha. Space Grotesk é só para título e
+wordmark (`display`); quem escreve `font-family: 'Space Grotesk'` num parágrafo
+de corpo errou o token, e quem escreve `Inter` em qualquer lugar usa um valor
+que não existe mais.
+
+**Só duas famílias são baixadas:** Space Grotesk (pesos 300, 400, 500) e Space
+Mono. O corpo renderiza sem baixar byte de fonte — é isso que deixa o orçamento
+de peso de pé para o pôster do herói.
 
 ## Escala tipográfica (`type`)
 
