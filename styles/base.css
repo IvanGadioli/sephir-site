@@ -33,3 +33,153 @@ h1,
 h2 {
   font-family: var(--fonte-display);
 }
+
+/* ---------------------------------------------------------------------------
+ * O design de Main.dc.html. Todo valor vem de var(--...) de tokens.css:
+ * nenhum hex, nenhum rgba() aqui — é a regra que a rodada 01 quebrou.
+ * ------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body { margin: 0; }
+
+.envoltorio { max-width: 68rem; margin: 0 auto; padding: 0 var(--espaco-lg); }
+
+
+/*
+ * `--cor-faint` NÃO é cor de texto. Medido: 2,46:1 sobre `void2` e 2,64:1 sobre
+ * `void`, contra mínimo de 4,5:1 do WCAG AA — é exatamente o par que o oráculo
+ * da rodada `pub/02` nomeou como falsificação de referência. Todo rótulo usa
+ * `--cor-muted` (6,07:1 e 6,54:1). `faint` serve para borda e separador, que
+ * não carregam texto.
+ */
+
+/* herói ------------------------------------------------------------------- */
+
+.heroi { position: relative; overflow: hidden; }
+
+.heroi__fundo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * O véu de legibilidade sobre o pôster.
+ *
+ * Usa `rgb(from var(--cor-void) r g b / N%)` — sintaxe de cor relativa — e não
+ * `color-mix()`. Não é preciosismo: a seção W9 de `oraculos-web.md` diz que
+ * `color-mix()` entre dois tokens "produz um terceiro matiz que NÃO é igual a
+ * nenhum dos dez, e isso é o comportamento certo, não uma exceção a abrir",
+ * e que a correção é "trocar por alfa do mesmo matiz, que é exatamente a
+ * técnica que os próprios artboards usam". A cor relativa preserva o matiz
+ * `void` (5, 7, 14) inteiro e mexe só no alfa, que o W9 descarta — então
+ * passa por ser certo, não por tolerância.
+ *
+ * OS 88% NÃO SÃO GOSTO — são derivados. O axe não sabe amostrar imagem, então
+ * texto sobre o pôster saía como `incomplete`, não como violação: 23 entradas.
+ * Conferidas à mão, como o oráculo manda, e a conferência achou falha real.
+ * Compondo o véu sobre o pixel mais claro do topo do pôster e calculando
+ * luminância relativa WCAG:
+ *
+ *   alfa   stardust  muted  amber  teal
+ *   0,55      4,58    1,70   2,21  2,14   <- navegação a 1,70:1, reprova feio
+ *   0,80     10,88    4,05   5,25  5,08   <- muted ainda abaixo de 4,5
+ *   0,85     12,69    4,72   6,13  5,93   <- primeiro alfa em que os 4 passam
+ *   0,88     14,0+    5,0+   6,5+  6,3+   <- escolhido, com margem
+ *
+ * Custo declarado: a 88% o pôster aparece como textura, não como imagem. É a
+ * troca entre a intenção visual do design e o teto de contraste de 4,5:1, e
+ * neste projeto o teto é limiar medido e a intenção visual não é. Quem quiser
+ * o pôster mais visível move o texto para fora dele ou aceita AA reprovado por
+ * escrito — as duas coisas são decisão do dono, não deste CSS.
+ */
+.heroi__veu {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    to bottom,
+    rgb(from var(--cor-void) r g b / 88%),
+    rgb(from var(--cor-void) r g b / 96%)
+  );
+}
+
+.heroi__conteudo { position: relative; padding: var(--espaco-xl) 0 var(--espaco-xxl); }
+
+.topo { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco-lg); flex-wrap: wrap; }
+
+.wordmark { font-family: var(--fonte-display); font-size: var(--tipo-h2-tamanho); margin: 0; letter-spacing: -0.01em; }
+.wordmark__sephir { color: var(--cor-stardust); }
+.wordmark__studio { color: var(--cor-amber); }
+
+.navegacao { display: flex; gap: var(--espaco-md); flex-wrap: wrap; font-size: var(--tipo-small-tamanho); }
+.navegacao a { color: var(--cor-muted); text-decoration: none; border-bottom: 1px solid var(--cor-border); padding-bottom: 2px; }
+.navegacao a:hover { color: var(--cor-stardust); border-bottom-color: var(--cor-teal); }
+.navegacao span[aria-disabled='true'] { color: var(--cor-muted); cursor: default; }
+
+.selo {
+  font-family: var(--fonte-mono);
+  font-size: var(--tipo-label-tamanho);
+  letter-spacing: var(--tipo-label-tracking);
+  text-transform: uppercase;
+  color: var(--cor-teal);
+  margin: var(--espaco-xxl) 0 var(--espaco-md);
+}
+
+.heroi h1 {
+  font-family: var(--fonte-display);
+  font-size: var(--tipo-hero-tamanho);
+  font-weight: var(--tipo-hero-peso);
+  line-height: var(--tipo-hero-altura);
+  letter-spacing: var(--tipo-hero-tracking);
+  margin: 0 0 var(--espaco-md);
+}
+
+.tagline { font-size: var(--tipo-body-tamanho); color: var(--cor-muted); margin: 0 0 var(--espaco-xl); max-width: 36rem; }
+
+.tiles { display: flex; gap: var(--espaco-lg); flex-wrap: wrap; }
+.tile { border: 1px solid var(--cor-border); border-radius: var(--raio-md); padding: var(--espaco-md) var(--espaco-lg); background-color: var(--cor-void2); }
+.tile__rotulo { font-family: var(--fonte-mono); font-size: var(--tipo-label-tamanho); letter-spacing: var(--tipo-label-tracking); text-transform: uppercase; color: var(--cor-muted); }
+.tile__valor { font-family: var(--fonte-display); font-size: var(--tipo-small-tamanho); color: var(--cor-stardust); margin-top: var(--espaco-xs); }
+
+/* seções ------------------------------------------------------------------ */
+
+.secao { padding: var(--espaco-section) 0; border-top: 1px solid var(--cor-border); }
+.secao__indice { font-family: var(--fonte-mono); font-size: var(--tipo-label-tamanho); letter-spacing: var(--tipo-label-tracking); text-transform: uppercase; color: var(--cor-muted); }
+.secao__indice strong { color: var(--cor-amber); font-weight: 400; }
+.secao h2 { font-family: var(--fonte-display); font-size: var(--tipo-h2-tamanho); font-weight: var(--tipo-h2-peso); line-height: var(--tipo-h2-altura); margin: var(--espaco-sm) 0 var(--espaco-lg); }
+.secao p { font-size: var(--tipo-body-tamanho); line-height: var(--tipo-body-altura); color: var(--cor-muted); max-width: 44rem; }
+.secao p + p { margin-top: var(--espaco-md); }
+
+.estado { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--espaco-md); }
+.estado li { display: grid; grid-template-columns: 10rem 1fr; gap: var(--espaco-lg); align-items: baseline; padding-bottom: var(--espaco-md); border-bottom: 1px solid var(--cor-border); }
+.estado__rotulo { font-family: var(--fonte-mono); font-size: var(--tipo-label-tamanho); letter-spacing: var(--tipo-label-tracking); text-transform: uppercase; }
+.estado__rotulo--existe { color: var(--cor-teal); }
+.estado__rotulo--construindo { color: var(--cor-amber); }
+.estado__rotulo--ausente { color: var(--cor-muted); }
+.estado__texto { color: var(--cor-muted); line-height: var(--tipo-body-altura); }
+
+.portoes { display: flex; gap: var(--espaco-xs); flex-wrap: wrap; margin-top: var(--espaco-lg); }
+.portoes span { font-family: var(--fonte-mono); font-size: var(--tipo-label-tamanho); color: var(--cor-muted); border: 1px solid var(--cor-border); border-radius: var(--raio-sm); padding: var(--espaco-xs) var(--espaco-sm); }
+
+.elo { display: inline-block; margin-top: var(--espaco-lg); font-family: var(--fonte-mono); font-size: var(--tipo-small-tamanho); color: var(--cor-teal); text-decoration: none; border-bottom: 1px solid var(--cor-teal-dim); }
+.elo:hover { color: var(--cor-stardust); }
+
+/* rodapé ------------------------------------------------------------------ */
+
+.rodape { border-top: 1px solid var(--cor-border-strong); padding: var(--espaco-xl) 0; }
+.rodape__lockup { font-family: var(--fonte-display); color: var(--cor-stardust); margin: 0 0 var(--espaco-xs); }
+.rodape__tagline { color: var(--cor-muted); margin: 0 0 var(--espaco-md); font-size: var(--tipo-small-tamanho); }
+.rodape__juridico { color: var(--cor-muted); font-size: var(--tipo-small-tamanho); margin: 0 0 var(--espaco-md); }
+.rodape__elos { display: flex; gap: var(--espaco-md); font-family: var(--fonte-mono); font-size: var(--tipo-label-tamanho); letter-spacing: var(--tipo-label-tracking); text-transform: uppercase; }
+.rodape__elos a { color: var(--cor-muted); text-decoration: none; }
+.rodape__elos a:hover { color: var(--cor-teal); }
+
+@media (max-width: 40rem) {
+  .estado li { grid-template-columns: 1fr; gap: var(--espaco-xs); }
+  .heroi__conteudo { padding: var(--espaco-lg) 0 var(--espaco-xl); }
+}

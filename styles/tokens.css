@@ -5,6 +5,40 @@
  * Não editar valores aqui sem antes mudar theme.ts. Ver skill `marca-sephir`.
  */
 
+/*
+ * As duas famílias baixadas, auto-hospedadas. `adr-fab-009` abriu a linha de
+ * orçamento de peso de fonte; `adr-fab-008` tirou `Inter` da marca, então o
+ * corpo de texto — a maior massa de texto de qualquer página — não baixa byte
+ * nenhum e renderiza na pilha de sistema.
+ *
+ * Auto-hospedado, não Google Fonts: a segunda metade do W11
+ * (`document.fonts.check()`) existe para pegar exatamente o modo de falha do
+ * CDN de terceiro — pilha computada dizendo "Space Grotesk" enquanto o
+ * navegador desenha `system-ui` porque o CDN caiu ou foi bloqueado. Servir do
+ * próprio domínio elimina a falha em vez de detectá-la.
+ *
+ * Subset `latin` só: cobre U+0000-00FF (todo acento do português) e
+ * U+2000-206F (o travessão). `latin-ext` custaria mais 33 kB e não é usado.
+ *
+ * Space Grotesk é fonte VARIÁVEL — um arquivo cobre 300 a 500, que são
+ * exatamente os pesos que o mock aprovado carrega.
+ */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fontes/space-grotesk-latin.woff2') format('woff2');
+  font-weight: 300 500;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fontes/space-mono-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: optional;
+}
+
 :root {
   /* Cores — superfícies (fundo → elevação) */
   --cor-void: #05070E;
@@ -28,7 +62,7 @@
 
   /* Famílias de fonte */
   --fonte-display: 'Space Grotesk', system-ui, sans-serif;
-  --fonte-body: 'Inter', system-ui, sans-serif;
+  --fonte-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --fonte-mono: 'Space Mono', ui-monospace, monospace;
 
   /* Escala tipográfica */

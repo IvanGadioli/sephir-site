@@ -43,8 +43,14 @@ const TETOS = Object.freeze({
   html: 20_000,
   css: 25_000,
   js: 130_000,
-  poster: 0,
-  total: 175_000,
+  // Os números da TABELA DE FÁBRICA (`_fabrica/oraculos-web.md`, W3), não os
+  // de uma rodada. A `pub/02_esqueleto-publicado` estreitou pôster para 0 e
+  // total para 175 000 porque **aquela** rodada não entregava pôster; herdar
+  // esse estreitamento faz a rodada que entrega o pôster reprovar por medir
+  // contra o teto de outra. Rodada que queira apertar passa `tetos` própria.
+  poster: 150_000,
+  fonte: 45_000,
+  total: 325_000,
   lcp: 2_500,
   cls: 0.05,
   tbt: 200,
@@ -242,7 +248,7 @@ export async function medirW3W4({ url, rota, semCompressao = false }) {
   if (bytes.html > TETOS.html) violacoes.push(`HTML: ${bytes.html} B > ${TETOS.html} B`);
   if (bytes.css > TETOS.css) violacoes.push(`CSS: ${bytes.css} B > ${TETOS.css} B`);
   if (bytes.js > TETOS.js) violacoes.push(`JS: ${bytes.js} B > ${TETOS.js} B`);
-  if (bytes.poster !== TETOS.poster) violacoes.push(`pôster: ${bytes.poster} B ≠ ${TETOS.poster} B`);
+  if (bytes.poster > TETOS.poster) violacoes.push(`pôster: ${bytes.poster} B > ${TETOS.poster} B`);
   if (bytes.total > TETOS.total) violacoes.push(`total: ${bytes.total} B > ${TETOS.total} B`);
   if (tempo.lcp > TETOS.lcp) violacoes.push(`LCP: ${tempo.lcp} ms > ${TETOS.lcp} ms`);
   if (tempo.cls > TETOS.cls) violacoes.push(`CLS: ${tempo.cls} > ${TETOS.cls}`);

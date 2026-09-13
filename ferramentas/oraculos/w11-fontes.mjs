@@ -12,7 +12,7 @@
 
 const TRES_PILHAS = [
   `'Space Grotesk', system-ui, sans-serif`,
-  `'Inter', system-ui, sans-serif`,
+  `system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`,
   `'Space Mono', ui-monospace, monospace`,
 ];
 

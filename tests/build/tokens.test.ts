@@ -15,7 +15,7 @@ describe('a paleta é cópia literal de theme.ts', () => {
   it('as três pilhas estão lá, entrada por entrada', () => {
     const t = tokens();
     expect(t).toContain(`'Space Grotesk', system-ui, sans-serif`);
-    expect(t).toContain(`'Inter', system-ui, sans-serif`);
+    expect(t).toContain(`system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`);
     expect(t).toContain(`'Space Mono', ui-monospace, monospace`);
   });
   it('não sobrou a pilha herdada da rodada 01', () => {
