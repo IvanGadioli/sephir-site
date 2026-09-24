@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+.env*.local
+.DS_Store
+*.tsbuildinfo
+.wrangler/
+test-results/
+playwright-report/
+.lighthouseci/
+
+# Build do `main` em ed68bd4, preservado como linha de base da comparação.
+# Reproduzível com `git checkout main && npm ci && npm run build`.
+baseline-main-ed68bd4/
