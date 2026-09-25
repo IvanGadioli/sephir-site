@@ -185,3 +185,109 @@ img { max-width: 100%; display: block; }
   color: var(--cor-stardust);
 }
 .seta:hover { color: var(--cor-amber); }
+
+.heroi { position: relative; min-height: 100svh; overflow: hidden; }
+.heroi__poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Exceção declarada: rgba() literal em parada de gradiente.
+   Os dois overlays abaixo são o herói do artboard, copiados sem retoque
+   (spec §5) — composições em alfa de --cor-void que custom property não
+   expressa sem color-mix(), e color-mix() mudaria a cor final. Fora deste
+   contexto, sempre use var(--cor-*). */
+.heroi__veu-lateral {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(5, 7, 14, 0.97) 0%, rgba(5, 7, 14, 0.72) 38%, rgba(5, 7, 14, 0.1) 62%);
+}
+.heroi__veu-vertical {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 7, 14, 0.5) 0%, rgba(5, 7, 14, 0) 25%, rgba(5, 7, 14, 0.85) 100%);
+}
+.heroi__texto {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: clamp(1.5rem, 8vw, 154px);
+  right: clamp(1.5rem, 8vw, 154px);
+  max-width: 700px;
+}
+.heroi__texto h1 { font-size: clamp(2.75rem, 6vw, 4.5rem); line-height: 1.02; }
+.heroi__linha {
+  font-size: clamp(1.0625rem, 2vw, 1.625rem);
+  font-weight: 300;
+  color: var(--cor-muted);
+  margin-top: 1.5rem;
+  max-width: 520px;
+  line-height: 1.5;
+}
+
+.selo { display: flex; align-items: center; gap: 0.625rem; color: var(--cor-faint); margin-bottom: 1.375rem; }
+.selo__ponto { width: 4px; height: 4px; border-radius: 50%; background: var(--cor-amber); flex: none; }
+
+.ficha {
+  border-top: 1px solid var(--cor-border);
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem 4rem;
+}
+.ficha__item dt { color: var(--cor-muted); margin-bottom: 0.5rem; }
+.ficha__item dd { font-size: 0.9375rem; color: var(--cor-stardust); }
+
+.colunas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3.5rem; }
+.colunas p { color: var(--cor-muted); line-height: 1.75; }
+
+.lista__fecho { border-top: 1px solid var(--cor-border); }
+
+.metodo { display: grid; grid-template-columns: 1fr 380px; gap: 5rem; }
+.metodo__texto { color: var(--cor-muted); line-height: 1.75; max-width: 560px; margin-bottom: 3rem; }
+
+/* Divergência consciente do mock: o artboard desenha 8 colunas na grade dos
+   portões. Em 380px de coluna, oito células de 40px com 8px de intervalo
+   somam 376px e encostam na borda. Duas fileiras de quatro (4 colunas) dá a
+   mesma informação sem aperto — ver task-10-report.md e o relatório da
+   Tarefa 23. */
+.grade-portoes {
+  display: grid;
+  grid-template-columns: repeat(4, 40px);
+  grid-auto-rows: 40px;
+  gap: 8px;
+  align-content: start;
+  justify-content: end;
+  list-style: none;
+}
+.portao {
+  border: 1px solid var(--cor-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--fonte-mono);
+  font-size: 0.6875rem;
+  color: var(--cor-muted);
+}
+/* rgba() literal aqui é valor normativo do brief da Tarefa 10 (mesmo tom de
+   --cor-amber, em alfa 16%). Fora do escopo estrito da exceção declarada
+   acima — não é parada de gradiente, é um fill — mas nenhum var(--cor-*)
+   expressa esse alfa sem color-mix(). Ver task-10-report.md. */
+.portao--cumprido {
+  border-color: var(--cor-amber);
+  background: rgba(232, 150, 58, 0.16);
+  color: var(--cor-stardust);
+}
+
+.apenas-movel { display: none; margin-top: 2.25rem; }
+
+@media (max-width: 767px) {
+  .colunas { grid-template-columns: 1fr; gap: 1.75rem; }
+  .metodo { grid-template-columns: 1fr; gap: 3rem; }
+  .grade-portoes { justify-content: start; }
+  .ficha { gap: 1.25rem 2rem; }
+  .apenas-movel { display: block; }
+}
