@@ -301,6 +301,10 @@ Os dois gradientes do herói são copiados do artboard sem retoque. Eles foram c
 .colunas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3.5rem; }
 .colunas p { color: var(--cor-muted); line-height: 1.75; }
 
+/* O artboard estiliza este wrapper: `display:flex; flex-direction:column; gap:0`
+   (Main.dc.html:110, ComoEFeito.dc.html:71). Sem a regra, a classe `.lista` fica
+   órfã no JSX — foi o que a revisão da Tarefa 10 pegou. */
+.lista { display: flex; flex-direction: column; }
 .lista__fecho { border-top: 1px solid var(--cor-border); }
 
 .metodo { display: grid; grid-template-columns: 1fr 380px; gap: 5rem; }
