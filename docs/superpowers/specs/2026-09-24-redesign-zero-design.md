@@ -94,13 +94,19 @@ Medição do `main` em `ed68bd4` (brotli, por rota, do que o visitante baixa):
 
 | rota | documento | CSS | JS | total |
 |---|---|---|---|---|
-| `/pt/` | 3 325 B | 1 493 B | **145 877 B** | **153 763 B** |
-| `/pt/sobre/` | 2 894 B | 1 493 B | 145 877 B | 153 332 B |
-| `404.html` | 1 256 B | 1 493 B | 145 877 B | 151 694 B |
-| `/` (casca) | 1 000 B | 1 493 B | 145 877 B | 151 438 B |
+| `/pt/` | 3 325 B | 1 493 B | **148 945 B** | **153 763 B** |
+| `/pt/sobre/` | 2 894 B | 1 493 B | 148 945 B | 153 332 B |
+| `404.html` | 1 256 B | 1 493 B | 148 945 B | 151 694 B |
+| `/` (casca) | 1 000 B | 1 493 B | 148 945 B | 151 438 B |
 
-95% do peso é runtime de React/Next. A casca de `meta refresh` — uma página sem
-uma linha de interação — baixa 146 kB de JS. O export estático não remove isso.
+**97% do peso é runtime de React/Next** — 96,9% na home, 98,4% na casca. A casca
+de `meta refresh`, uma página sem uma linha de interação, baixa **149 kB de JS**.
+O export estático não remove isso.
+
+> Correção de 2026-09-24, achada pela Tarefa 0: a coluna de JS desta tabela dizia
+> 145 877 B na primeira redação. Era erro de aritmética meu ao repartir o total
+> em colunas — os totais sempre estiveram certos. O valor medido é 148 945 B, e a
+> proporção de framework é pior do que a spec afirmava, não melhor.
 
 **Consequência para a spec:** o piso de framework é **registrado como fato, não
 orçado como meta**. O que esta branch promete é falseável de outro jeito:

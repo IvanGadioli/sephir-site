@@ -121,10 +121,10 @@ Instrumento: `@lhci/cli` 0.15, perfil móvel, mediana de 5 execuções, sobre
 
 | rota | documento | CSS | JS | total |
 |---|---|---|---|---|
-| `/pt/` | 3 325 B | 1 493 B | 145 877 B | 153 763 B |
-| `/pt/sobre/` | 2 894 B | 1 493 B | 145 877 B | 153 332 B |
-| `404.html` | 1 256 B | 1 493 B | 145 877 B | 151 694 B |
-| `/` (casca) | 1 000 B | 1 493 B | 145 877 B | 151 438 B |
+| `/pt/` | 3 325 B | 1 493 B | 148 945 B | 153 763 B |
+| `/pt/sobre/` | 2 894 B | 1 493 B | 148 945 B | 153 332 B |
+| `404.html` | 1 256 B | 1 493 B | 148 945 B | 151 694 B |
+| `/` (casca) | 1 000 B | 1 493 B | 148 945 B | 151 438 B |
 
 ## Núcleos vitais
 
