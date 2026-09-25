@@ -36,4 +36,24 @@ describe('Topo', () => {
     const html = renderToStaticMarkup(<Topo ativo={null} />);
     expect(html).toMatch(/<nav[^>]*aria-label="seções"/);
   });
+
+  it('oferece um menu móvel em details, sem JavaScript', () => {
+    const html = renderToStaticMarkup(<Topo ativo="sobre" />);
+    expect(html).toContain('<details class="menu-movel"');
+    expect(html).toMatch(/<summary[^>]*aria-label="abrir o menu"/);
+  });
+
+  it('repete os quatro itens no menu móvel', () => {
+    const html = renderToStaticMarkup(<Topo ativo="sobre" />);
+    const depoisDoSummary = html.slice(html.indexOf('</summary>'));
+    for (const rotulo of ['o projeto', 'como é feito', 'devlog', 'sobre']) {
+      expect(depoisDoSummary).toContain(rotulo);
+    }
+  });
+
+  it('não usa button nem input no menu móvel, que precisariam de JS', () => {
+    const html = renderToStaticMarkup(<Topo ativo="sobre" />);
+    expect(html).not.toContain('<button');
+    expect(html).not.toContain('<input');
+  });
 });

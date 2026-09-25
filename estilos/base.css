@@ -333,3 +333,33 @@ img { max-width: 100%; display: block; }
 .erro__codigo { letter-spacing: 0.3em; color: var(--cor-amber); margin-bottom: 1.75rem; font-size: 0.875rem; }
 .erro__miolo h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 1.25rem; }
 .erro__texto { color: var(--cor-muted); max-width: 520px; line-height: 1.6; margin-bottom: 2.5rem; }
+
+.menu-movel { display: none; position: relative; }
+.menu-movel > summary {
+  list-style: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cor-stardust);
+  cursor: pointer;
+}
+.menu-movel > summary::-webkit-details-marker { display: none; }
+.menu-movel__lista {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--cor-void2);
+  border: 1px solid var(--cor-border-strong);
+}
+.menu-movel__lista a, .menu-movel__lista span { min-height: 44px; display: flex; align-items: center; }
+
+@media (max-width: 767px) {
+  .menu-movel { display: block; }
+}
