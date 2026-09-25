@@ -194,24 +194,38 @@ export default function Heroi() {
 
 `componentes/heroi/Canvas.tsx`:
 
+**A decisão de tentar é síncrona, e o `<canvas>` não entra no DOM quando ela
+falha.** Isto foi corrigido durante a Tarefa 18: a primeira redação deste bloco
+sempre retornava o `<canvas>` e deixava o `useEffect` decidir só se o renderer
+arrancava — o que reprovava o E2E do próprio Step 9, que espera `.heroi__canvas`
+com **count 0** sem `navigator.gpu`, não apenas invisível por opacidade. Decidir
+na montagem é seguro porque este componente só existe no cliente (`ssr: false`
+no `index.tsx`): nunca corre no servidor, e `navigator`/`matchMedia` sempre
+existem quando ele monta.
+
 ```tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { criarRenderer } from './renderer.ts';
 
+// Dois dos três motivos para não montar são decidíveis de forma síncrona. O
+// terceiro — falha de init() ou de compilação — só aparece depois, e termina no
+// mesmo lugar: o pôster. Com um buraco negro em rotação, honrar
+// prefers-reduced-motion não é boa prática, é necessidade.
+function podeTentar(): boolean {
+  if (typeof navigator === 'undefined' || navigator.gpu === undefined) return false;
+  if (typeof window === 'undefined') return false;
+  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export function Canvas() {
+  const [tentar] = useState(podeTentar);
   const ref = useRef<HTMLCanvasElement>(null);
   const [pintando, setPintando] = useState(false);
 
   useEffect(() => {
-    // Três motivos para não montar, todos terminando no pôster: sem
-    // navigator.gpu, movimento reduzido pedido, ou falha de init. Com um
-    // buraco negro em rotação, honrar prefers-reduced-motion não é boa
-    // prática — é necessidade.
-    const movimentoReduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (movimentoReduzido) return;
-    if (navigator.gpu === undefined) return;
+    if (!tentar) return;
 
     const canvas = ref.current;
     if (canvas === null) return;
