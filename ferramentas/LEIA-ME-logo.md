@@ -4,9 +4,10 @@ Derivado de `Logo_SephirStudio_v1.png` (1672 × 941, 891 719 B), em
 `~/Documents/sephir/sephir-brand/00-identidade/logo/`, que é o arquivo oficial
 enviado à FAPDF em 03/09/2026.
 
-Comando (com flatten sobre `--cor-void`):
+Comando — **caminho de entrada absoluto, saída relativa à raiz do repo**, para
+rodar sem `cd` e sem adivinhação:
 
-    magick Logo_SephirStudio_v1.png \
+    magick /home/alzahir/Documents/sephir/sephir-brand/00-identidade/logo/Logo_SephirStudio_v1.png \
       -background '#05070E' -flatten -alpha off \
       -resize 520x -quality 88 -strip \
       public/marca/logo.webp
