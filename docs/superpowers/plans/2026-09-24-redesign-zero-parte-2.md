@@ -17,6 +17,33 @@ Todas as tarefas desta parte usam a mesma camada de teste: **unit render**, com 
 - Consumes: `ITENS_MENU`, `ChaveMenu` de `lib/rotas.ts`; `brand` de `lib/marca.ts`.
 - Produces: `export function Topo({ ativo }: { ativo: ChaveMenu | null })`. Usado por `Faixa` (Tarefa 6) e pela home (Tarefa 10).
 
+- [ ] **Step 0: Liberar extensão explícita no programa de tipo de produção**
+
+Este é o primeiro componente a importar um módulo do repositório, e o plano
+escreve esses imports com extensão explícita (`from '../lib/rotas.ts'`,
+`from './Topo.tsx'`). O TypeScript rejeita isso com **TS5097** a menos que
+`allowImportingTsExtensions` esteja ligado — e a Tarefa 2 só o ligou em
+`tsconfig.tests.json`, que cobre os testes, não `app/` e `componentes/`.
+
+Em `tsconfig.json`, dentro de `compilerOptions`:
+
+```json
+    "allowImportingTsExtensions": true,
+```
+
+A opção exige `noEmit: true`, que já está lá. O Next reescreve `include` e
+`plugins` deste arquivo a cada build, mas não mexe nas outras
+`compilerOptions` — verificado na Tarefa 1.
+
+**Verifique de verdade, não presuma.** Depois de escrever o `Topo.tsx` (Step 4),
+rode `npm run build` e `npm run typecheck`. Se o build **ainda** reprovar o
+import com extensão — porque o Turbopack não resolveu `./Topo.tsx`, ou porque o
+Next sobrescreveu a opção — então o caminho é o outro: **tire a extensão dos
+imports de código de produção** (`from '../lib/rotas'`, `from './Topo'`), que é
+o estilo convencional em Next, e deixe os testes como estão, com extensão e a
+opção ligada no programa de testes. Registre no report qual dos dois caminhos
+valeu, porque as Tarefas 5 a 22 seguem o mesmo.
+
 - [ ] **Step 1: Ensinar o vitest a ler `.tsx`**
 
 Em `vitest.config.ts`, trocar a linha do `include`:
