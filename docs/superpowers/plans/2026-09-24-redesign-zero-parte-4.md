@@ -238,7 +238,7 @@ git commit -m "verificação: a árvore do export, a integridade dos links e a f
 - Test: os dois `.spec.ts`
 
 **Interfaces:**
-- Consumes: `ROTAS` de `lib/rotas.ts`; `colors`, `fonts` de `lib/marca.ts`.
+- Consumes: `ROTAS` de `lib/rotas.ts` (derivada, não duplicada); `colors`, `fonts` de `lib/marca.ts`.
 - Produces: nada — é tarefa de verificação.
 
 - [ ] **Step 1: Escrever o servidor estático**
@@ -355,8 +355,15 @@ emulador, não do site. O viewport de 390 px é o que importa para o layout.
 ```ts
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { ROTAS as ROTAS_DO_SITE } from '../../lib/rotas.ts';
 
-const ROTAS = ['/', '/pt/', '/pt/sobre/', '/pt/como-e-feito/', '/rota-que-nao-existe/'];
+// Derivado de `lib/rotas.ts`, não digitado à mão: uma rota nova acrescentada lá
+// passa a ser varrida pelo axe automaticamente. O devlog já está previsto para
+// uma rodada futura, e uma lista local não o acompanharia — o site ganharia
+// rota sem cobertura de acessibilidade, em silêncio.
+// A rota inexistente entra à parte de propósito: ela não é rota do site, é o
+// caminho que faz o host servir o 404.
+const ROTAS = [...ROTAS_DO_SITE.map((r) => r.rota), '/rota-que-nao-existe/'];
 
 for (const rota of ROTAS) {
   test(`axe não acha violação em ${rota}`, async ({ page }) => {
