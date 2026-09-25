@@ -15,11 +15,3 @@ playwright-report/
 # Build do `main` em ed68bd4, preservado como linha de base da comparação.
 # Reproduzível com `git checkout main && npm ci && npm run build`.
 baseline-main-ed68bd4/
-
-# Gerados por `next dev` (Next 16, generate-agent-files.js) sempre que ele
-# roda — apareceram na Tarefa 18 por causa da verificação manual do Step 3
-# (npm run dev). Não são deste projeto: reaparecem a cada `next dev` e não têm
-# relação com o CLAUDE.md canônico do repositório de código nem com o do
-# vault. Ver task-18-report.md, achados da auto-revisão.
-/AGENTS.md
-/CLAUDE.md
