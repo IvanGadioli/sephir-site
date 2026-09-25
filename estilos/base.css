@@ -1,0 +1,18 @@
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fontes/space-grotesk-latin.woff2') format('woff2');
+  font-weight: 300 500;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fontes/space-mono-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: optional;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
