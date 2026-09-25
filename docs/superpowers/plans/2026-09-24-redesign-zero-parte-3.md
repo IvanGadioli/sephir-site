@@ -598,7 +598,11 @@ describe('a página Como é feito', () => {
   });
 
   it('lista os oito portões, do 00 ao 07', () => {
-    const linhas = html.match(/linha--portao/g) ?? [];
+    // Ancorado em `class="`, não no nome da classe solto. O Next 16 serializa
+    // `className` uma segunda vez no payload RSC de hidratação, no fim do
+    // documento, então uma regex crua conta o dobro — 16 em vez de 8. Isto foi
+    // medido na Tarefa 10, onde a versão crua deste mesmo teste reprovava.
+    const linhas = html.match(/class="[^"]*linha--portao[^"]*"/g) ?? [];
     expect(linhas).toHaveLength(8);
     for (const nome of ['escopo', 'contexto', 'spec', 'oráculo', 'testes', 'diff', 'relatório', 'encerramento']) {
       expect(html).toContain(nome);
