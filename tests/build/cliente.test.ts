@@ -27,7 +27,12 @@ const DIRETIVA_CLIENTE = /^\s*(['"])use client\1/m;
 // também reprova — código de cliente morto dentro de componente de servidor é
 // sujeira que vale sinalizar, não é bug deste teste.
 const HOOKS_CLIENTE = ['useState', 'useEffect', 'useRef', 'usePathname', 'useRouter'];
-const chamadaDeHook = (hook: string) => new RegExp(`\\b${hook}\\s*\\(`);
+
+// A chamada pode levar argumento de tipo: `useRef<HTMLCanvasElement>(null)` é a
+// forma idiomática em TSX. Sem o grupo opcional `<...>`, um vazamento escrito
+// assim passaria batido — falso negativo, que é pior que o falso positivo que
+// esta abordagem substituiu.
+const chamadaDeHook = (hook: string) => new RegExp(`\\b${hook}\\s*(<[^>]*>)?\\s*\\(`);
 
 describe("a fronteira de 'use client'", () => {
   it('só aparece dentro de componentes/heroi/', () => {
