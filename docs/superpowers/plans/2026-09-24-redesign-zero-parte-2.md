@@ -14,8 +14,16 @@ Todas as tarefas desta parte usam a mesma camada de teste: **unit render**, com 
 - Test: `tests/unit/Topo.test.tsx`
 
 **Interfaces:**
-- Consumes: `ITENS_MENU`, `ChaveMenu` de `lib/rotas.ts`; `brand` de `lib/marca.ts`.
+- Consumes: `ITENS_MENU`, `ChaveMenu` de `lib/rotas.ts`. **Não** consome `brand`.
 - Produces: `export function Topo({ ativo }: { ativo: ChaveMenu | null })`. Usado por `Faixa` (Tarefa 6) e pela home (Tarefa 10).
+
+**Por que o wordmark é literal e não vem de `brand.studio`:** o lockup dos
+artboards é bicolor — `Sephir` em âmbar, ` Studio` em stardust, dois `<span>`
+irmãos. `brand.studio` é a string única `'Sephir Studio'`, e derivar duas metades
+coloridas dela exigiria `split(' ')`, que quebra em silêncio no dia em que o nome
+ganhar uma terceira palavra. Dois literais numa marca registrada e vinculada a
+CNPJ são mais estáveis que um split. `brand` é a fonte para texto que **é** uma
+string única — a tagline e o CNPJ do `Rodape`, na Tarefa 5.
 
 - [ ] **Step 0: Liberar extensão explícita no programa de tipo de produção**
 
