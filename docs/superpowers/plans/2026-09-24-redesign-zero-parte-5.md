@@ -776,6 +776,16 @@ describe('o peso do herói', () => {
     execFileSync('npm', ['run', 'build'], { stdio: 'inherit' });
   }, 300_000);
 
+  it('mede alguma coisa: o herói não pode custar zero', () => {
+    // Piso, não só teto. `medirHeroi` calcula home − sobre. Se o Next puser o
+    // chunk do herói num pedaço compartilhado que TODA rota baixa, a diferença
+    // dá ~0 e o teste do limiar passaria medindo nada — um verde que não prova
+    // nada é pior que um vermelho. Se este teste falhar, a medida por diferença
+    // é inválida para este build: troque para atribuição por chunk (ver o
+    // Step 3) antes de confiar no número do teste seguinte.
+    expect(medirHeroi('out')).toBeGreaterThan(10_240);
+  });
+
   it('o chunk do herói cabe no limiar declarado', () => {
     const bytes = medirHeroi('out');
     console.log(`chunk do herói: ${bytes} B brotli (limiar ${LIMIAR_HEROI_BR})`);
@@ -804,10 +814,37 @@ npm test -- tests/build/peso-heroi.test.ts
 node ferramentas/medir.mjs out
 ```
 
-Anote a saída inteira — ela entra no relatório da Tarefa 23. **Se o primeiro
-teste falhar**, não toque no limiar: registre o número real, marque o teste com
-`.fails()` documentando que é achado conhecido, e leve a diferença para a
-Tarefa 23.
+Anote a saída inteira — ela entra no relatório da Tarefa 23.
+
+**Se o teste de limiar falhar**, não toque no limiar: registre o número real,
+marque o teste com `.fails()` documentando que é achado conhecido, e leve a
+diferença para a Tarefa 23.
+
+**Se o teste de piso falhar** (herói medindo ~0), a medida por diferença não
+serve para este build: o Next pôs o canvas num chunk compartilhado. Troque
+`medirHeroi` por atribuição direta — some o brotli dos chunks que aparecem em
+`pt/index.html` e **não** em `pt/sobre/index.html`:
+
+```js
+export function medirHeroiPorChunk(raiz) {
+  const refs = (rota) => {
+    const html = readFileSync(join(raiz, rota), 'utf8');
+    return new Set([...html.matchAll(/\/_next\/static\/[^"']+\.(?:js|css)/g)].map((m) => m[0]));
+  };
+  const daHome = refs('pt/index.html');
+  const deSobre = refs('pt/sobre/index.html');
+  let total = 0;
+  for (const ref of daHome) {
+    if (deSobre.has(ref)) continue;
+    const arquivo = join(raiz, ref.replace(/^\//, ''));
+    if (existsSync(arquivo)) total += brotli(arquivo);
+  }
+  return total;
+}
+```
+
+Se **nem isso** achar chunk exclusivo da home, então o canvas está mesmo dentro
+do pedaço comum — e isso é o achado a registrar, não um número a forjar.
 
 - [ ] **Step 4: Commit**
 
@@ -971,14 +1008,23 @@ comparação honesta — dois medidores diferentes mediriam duas coisas.
 - [ ] **Step 2: Medir LCP e CLS nos dois**
 
 ```bash
+node tests/support/servidor-estatico.mjs out 4173 &
+ZERO=$!
 npx lhci collect --url=http://localhost:4173/pt/ --numberOfRuns=5 \
   --settings.preset=perf --settings.formFactor=mobile
+kill $ZERO
+
+node tests/support/servidor-estatico.mjs baseline-main-ed68bd4 4174 &
+BASE=$!
+npx lhci collect --url=http://localhost:4174/pt/ --numberOfRuns=5 \
+  --settings.preset=perf --settings.formFactor=mobile
+kill $BASE
 ```
 
-Cinco execuções com mediana, porque uma só mede o ruído da máquina. Repita
-servindo o `baseline-main-ed68bd4/` — ajuste a raiz em
-`tests/support/servidor-estatico.mjs` temporariamente, ou copie-o para `out/`
-num diretório de trabalho.
+Cinco execuções com mediana, porque uma só mede o ruído da máquina. As duas
+árvores são servidas pelo **mesmo** servidor, mudando só a raiz e a porta — dois
+servidores diferentes mediriam duas coisas diferentes. O servidor aceita a raiz
+em `argv[2]` e a porta em `argv[3]` desde a Tarefa 17.
 
 - [ ] **Step 3: Contar o custo da rodada**
 

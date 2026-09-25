@@ -252,8 +252,12 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 
-const RAIZ = new URL('../../out/', import.meta.url).pathname;
-const PORTA = 4173;
+// A raiz vem de argv, com `out` por padrão. Não é embutida: a Tarefa 23 precisa
+// servir `baseline-main-ed68bd4/` com o MESMO servidor para a comparação ser
+// honesta, e editar o caminho à mão a cada medição é como se acaba servindo o
+// diretório errado sem perceber.
+const RAIZ = new URL(`../../${process.argv[2] ?? 'out'}/`, import.meta.url).pathname;
+const PORTA = Number(process.argv[3] ?? 4173);
 
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',
@@ -287,7 +291,7 @@ createServer((req, res) => {
   res.writeHead(status, { 'content-type': TIPOS[extname(alvo)] ?? 'application/octet-stream' });
   createReadStream(alvo).pipe(res);
 }).listen(PORTA, () => {
-  console.log(`servindo out/ em http://localhost:${PORTA}`);
+  console.log(`servindo ${RAIZ} em http://localhost:${PORTA}`);
 });
 ```
 
