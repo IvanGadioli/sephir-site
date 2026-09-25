@@ -1,3 +1,4 @@
+import Heroi from '../../componentes/heroi/index.tsx';
 import { Linha } from '../../componentes/Linha.tsx';
 import { Secao } from '../../componentes/Secao.tsx';
 import { Seta } from '../../componentes/Seta.tsx';
@@ -27,7 +28,7 @@ export default function Home() {
   return (
     <>
       <div className="heroi">
-        <img className="heroi__poster" src="/poster/heroi.webp" alt="" />
+        <Heroi />
         <div className="heroi__veu-lateral" />
         <div className="heroi__veu-vertical" />
         <Topo ativo="projeto" />

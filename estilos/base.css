@@ -209,6 +209,24 @@ img { max-width: 100%; display: block; }
   inset: 0;
   background: linear-gradient(180deg, rgba(5, 7, 14, 0.5) 0%, rgba(5, 7, 14, 0) 25%, rgba(5, 7, 14, 0.85) 100%);
 }
+.heroi__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+.heroi__canvas--visivel { opacity: 1; }
+
+/* Quem pediu movimento reduzido nunca vê o canvas — o componente sequer o
+   monta. Esta regra é a segunda linha de defesa, para o caso de a preferência
+   mudar depois da montagem. */
+@media (prefers-reduced-motion: reduce) {
+  .heroi__canvas { display: none; }
+}
 .heroi__texto {
   position: absolute;
   top: 50%;
