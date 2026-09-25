@@ -52,3 +52,40 @@ img { max-width: 100%; display: block; }
 }
 
 .envoltorio { max-width: 1200px; margin: 0 auto; padding-inline: clamp(1.5rem, 8vw, 154px); }
+
+.topo {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem clamp(1.5rem, 8vw, 154px);
+}
+
+.wordmark {
+  font-family: var(--fonte-display);
+  font-weight: 500;
+  font-size: 1.0625rem;
+  letter-spacing: 0.02em;
+}
+.wordmark__sephir { color: var(--cor-amber); }
+.wordmark__studio { color: var(--cor-stardust); }
+
+.navegacao { display: flex; gap: 2.75rem; }
+.navegacao a, .navegacao__ausente {
+  font-size: 0.875rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--cor-muted);
+}
+.navegacao a:hover { color: var(--cor-stardust); }
+.navegacao__ativo { color: var(--cor-stardust); }
+
+/* O display:none abaixo de 768px é provisório: a Tarefa 14 põe um
+   <details>/<summary> no lugar. */
+@media (max-width: 767px) {
+  .topo { padding: 1.25rem 1.5rem; }
+  .navegacao { display: none; }
+}
