@@ -150,3 +150,25 @@ img { max-width: 100%; display: block; }
 .eyebrow__numero { color: var(--cor-amber); }
 .eyebrow__rotulo { color: var(--cor-muted); }
 .secao h2 { font-size: clamp(2rem, 4vw, 3.25rem); margin-bottom: 2.5rem; }
+
+.linha {
+  display: grid;
+  gap: 2rem;
+  align-items: baseline;
+  border-top: 1px solid var(--cor-border);
+  padding-block: 1.5rem;
+}
+.linha--estado { grid-template-columns: 140px 1fr; }
+.linha--portao { grid-template-columns: 64px 240px 1fr; padding-block: 1.75rem; }
+
+.linha__rotulo { font-family: var(--fonte-mono); font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.linha__rotulo--existe { color: var(--cor-amber); }
+.linha__rotulo--construcao { color: var(--cor-stardust); }
+.linha__rotulo--ausente { color: var(--cor-muted); }
+.linha__numero { font-family: var(--fonte-mono); font-size: 1.25rem; color: var(--cor-amber); }
+.linha__corpo { font-size: 1.0625rem; color: var(--cor-stardust); }
+.linha__nota { font-size: 0.9375rem; color: var(--cor-muted); }
+
+@media (max-width: 767px) {
+  .linha--estado, .linha--portao { grid-template-columns: 1fr; gap: 0.5rem; }
+}
