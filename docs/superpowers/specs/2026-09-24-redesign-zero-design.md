@@ -375,6 +375,25 @@ renegocia por ter estourado.
 | LCP | não pior que o `main` | medido no passo 0, perfil móvel do Lighthouse |
 | CLS | ≤ 0,02 **e** não pior que o `main` | idem |
 | axe | **0** violações | cinco rotas × dois viewports |
+
+> **Este número NÃO foi cumprido, por decisão do titular em 2026-09-25.** A
+> Tarefa 17 — a primeira a abrir navegador real — achou uma violação WCAG 2 AA
+> `color-contrast` de verdade: `--cor-faint` (#4A5468) sobre `--cor-void`
+> (#05070E) dá **2,64:1**, e texto pequeno exige 4,5:1. Ela aparece nas cinco
+> rotas e nos dois viewports, sempre pelo mesmo par de cores, em dois elementos:
+> a tagline do rodapé (13 px) e o selo de fase (11 px).
+>
+> A causa está na marca, não no site: o `theme.ts` oficial define `faint` como
+> "texto terciário, captions, placeholders" — um uso que essa cor não serve de
+> forma acessível sobre o fundo da própria marca. Dos cinco tons, é o único que
+> reprova; `muted` dá 6,54:1, `amber` 8,49:1, `teal` 8,21:1, `stardust` 17,58:1.
+>
+> Apresentei três saídas ao titular — trocar o token no site, corrigir a cor na
+> marca, ou aceitar e documentar. **Ele escolheu aceitar e documentar**, para
+> preservar a fidelidade ao mock aprovado. A consequência fica registrada sem
+> atenuação: **o experimento falha este número por escolha declarada**, não por
+> limitação técnica, e usuários com baixa visão não conseguem ler esses dois
+> elementos. A correção de marca fica fora desta rodada.
 | FPS | política da seção 5 | cap 30, queda a 24 por 2 s, desligamento |
 | JS de aplicação | `'use client'` só em `componentes/heroi/` | um ponto de entrada, dois arquivos, um chunk |
 
