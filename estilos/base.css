@@ -107,3 +107,40 @@ img { max-width: 100%; display: block; }
 @media (max-width: 767px) {
   .rodape__interno { flex-direction: column; align-items: flex-start; gap: 2.5rem; }
 }
+
+.faixa { position: relative; overflow: hidden; background: var(--cor-void); }
+.faixa--alta { min-height: 420px; }
+.faixa--baixa { min-height: 340px; }
+
+.faixa__fundo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+}
+/* Exceção declarada: rgba() literal em parada de gradiente.
+   Este é o overlay do artboard, e seu valor em rgba não pode ser
+   expresso como variável sem color-mix(), que mudaria a cor final.
+   Fora deste contexto, sempre use var(--cor-*). */
+.faixa__veu {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 7, 14, 0.75), rgba(5, 7, 14, 0.98));
+}
+
+.faixa__texto {
+  position: absolute;
+  bottom: 3.5rem;
+  left: clamp(1.5rem, 8vw, 154px);
+  right: clamp(1.5rem, 8vw, 154px);
+}
+.faixa__texto h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+.faixa__regua { width: 64px; height: 1px; background: var(--cor-amber); margin-bottom: 1.5rem; }
+.faixa__sub {
+  font-size: 1.0625rem;
+  font-weight: 300;
+  color: var(--cor-muted);
+  margin-top: 1rem;
+}
