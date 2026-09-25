@@ -36,4 +36,8 @@ describe('o 404', () => {
   it('não deixa um diretório _not-found sobrando no export', () => {
     expect(existsSync('out/_not-found')).toBe(false);
   });
+
+  it('não deixa a rota /404/ duplicada no export', () => {
+    expect(existsSync('out/404')).toBe(false);
+  });
 });
