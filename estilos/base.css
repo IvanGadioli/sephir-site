@@ -16,3 +16,39 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; }
+
+body {
+  background: var(--cor-void);
+  color: var(--cor-stardust);
+  font-family: var(--fonte-body);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Peso 300 é o valor dos artboards, e diverge do theme.ts de propósito.
+   Ver lib/marca.ts. */
+h1, h2, h3 {
+  font-family: var(--fonte-display);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+a { color: var(--cor-amber); text-decoration: none; }
+a:hover { color: var(--cor-amber-dim); }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--cor-amber);
+  outline-offset: 3px;
+}
+
+img { max-width: 100%; display: block; }
+
+.mono {
+  font-family: var(--fonte-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.6875rem;
+}
+
+.envoltorio { max-width: 1200px; margin: 0 auto; padding-inline: clamp(1.5rem, 8vw, 154px); }

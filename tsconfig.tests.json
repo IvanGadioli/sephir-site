@@ -1,5 +1,9 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "incremental": true, "tsBuildInfoFile": "./tsconfig.tests.tsbuildinfo" },
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "./tsconfig.tests.tsbuildinfo",
+    "allowImportingTsExtensions": true
+  },
   "include": ["next-env.d.ts", "lib", "app", "componentes", "tests", "ferramentas"]
 }
