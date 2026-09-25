@@ -83,8 +83,8 @@ img { max-width: 100%; display: block; }
 .navegacao a:hover { color: var(--cor-stardust); }
 .navegacao__ativo { color: var(--cor-stardust); }
 
-/* O display:none abaixo de 768px é provisório: a Tarefa 14 põe um
-   <details>/<summary> no lugar. */
+/* Abaixo de 768px a navegação de desktop some; o painel .menu-movel
+   (details/summary, definido mais abaixo) assume no lugar dela. */
 @media (max-width: 767px) {
   .topo { padding: 1.25rem 1.5rem; }
   .navegacao { display: none; }

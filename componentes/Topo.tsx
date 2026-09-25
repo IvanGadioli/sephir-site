@@ -47,6 +47,9 @@ export function Topo({ ativo }: { ativo: ChaveMenu | null }) {
           </svg>
         </summary>
         <nav className="menu-movel__lista" aria-label="seções, menu móvel">
+          {/* Sem aria-current aqui: o <nav> de desktop já marca a página ativa, e dois
+              "page" no mesmo documento são ambíguos para leitor de tela. O estado no
+              painel móvel vem da cor, por navegacao__ativo. */}
           {ITENS_MENU.map((item) =>
             item.href === null ? (
               <span key={item.chave} className="navegacao__ausente">
