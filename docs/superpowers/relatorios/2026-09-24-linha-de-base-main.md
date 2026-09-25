@@ -8,13 +8,16 @@ Instrumento: `@lhci/cli` 0.15, perfil móvel, mediana de 5 execuções, sobre
 
 | rota | documento | CSS | JS | total |
 |---|---|---|---|---|
-| `/pt/` | 3 325 B | 1 493 B | 145 877 B | 153 763 B |
-| `/pt/sobre/` | 2 894 B | 1 493 B | 145 877 B | 153 332 B |
-| `404.html` | 1 256 B | 1 493 B | 145 877 B | 151 694 B |
-| `/` (casca) | 1 000 B | 1 493 B | 145 877 B | 151 438 B |
+| `/pt/` | 3 325 B | 1 493 B | 148 945 B | 153 763 B |
+| `/pt/sobre/` | 2 894 B | 1 493 B | 148 945 B | 153 332 B |
+| `404.html` | 1 256 B | 1 493 B | 148 945 B | 151 694 B |
+| `/` (casca) | 1 000 B | 1 493 B | 148 945 B | 151 438 B |
 
-Tabela copiada literalmente do brief (spec §3). Não remedida nesta tarefa —
-ver "Auto-revisão" abaixo para o spot-check que fiz sobre ela.
+Coluna JS corrigida para **148 945 B** (era 145 877 B na primeira redação
+da spec §3 e do brief). Os totais nunca mudaram — batiam com 148 945 B
+desde o início, não com 145 877 B; o erro estava só na repartição por
+coluna. Ver "Achados da auto-revisão" abaixo para como isso foi encontrado
+e confirmado.
 
 ## Núcleos vitais
 
@@ -271,25 +274,35 @@ brutos dos relatórios, não de inferência.
 
 ## Achados da auto-revisão
 
-1. **Spot-check da tabela de peso brotli (copiada do brief).** Recalculei
-   com `brotli -c -q 11` os quatro documentos HTML e o CSS único do build:
-   `pt/index.html` → 3 325 B, `pt/sobre/index.html` → 2 894 B, `404.html`
-   → 1 256 B, `index.html` (casca) → 1 000 B, CSS → 1 493 B. Todos batem
-   exatamente com a tabela do brief. **A coluna JS (145 877 B) eu não
-   consegui reproduzir de forma independente**: somando o brotli de todos
-   os 6 chunks `.js` referenciados em `pt/index.html` deu 148 945 B; excluindo
-   o chunk `noModule` (que browsers modernos não baixam — confirmado pelo
-   `network-requests` audit do Lighthouse, que mostra só 4 scripts JS
-   efetivamente transferidos) deu 113 787 B; somando todo `.js` emitido no
-   build (incluindo os 3 manifests do Next) deu 149 245 B. Nenhuma dessas
-   três tentativas bate com 145 877 B. Não sei que método exato produziu o
-   número original da spec §3 — provavelmente outra combinação de arquivos
-   ou outra ferramenta de brotli. **Não alterei a tabela**: o brief é
-   explícito que os valores são normativos e usados literalmente, e a
-   tarefa desta rodada é LCP/CLS, não reauditar o peso. Documento e CSS
-   bateram exato, o que dá alguma confiança na origem da tabela; a coluna
-   JS fica como item não totalmente reconciliado, registrado aqui para
-   quem for usá-la depois.
+1. **Spot-check da tabela de peso brotli achou um erro de aritmética na
+   spec §3 — corrigido.** Recalculei com `brotli -c -q 11` os quatro
+   documentos HTML e o CSS único do build: `pt/index.html` → 3 325 B,
+   `pt/sobre/index.html` → 2 894 B, `404.html` → 1 256 B, `index.html`
+   (casca) → 1 000 B, CSS → 1 493 B. Todos bateram exato com a tabela
+   original. A coluna JS (145 877 B na primeira redação) eu não consegui
+   reproduzir: somando o brotli dos 6 chunks `.js` referenciados em
+   `pt/index.html`, deduplicados, deu **148 945 B** — não 145 877 B.
+   Reportei a discrepância ao controlador sem alterar a tabela, porque o
+   brief marcava os valores como normativos.
+
+   O controlador remediu com o mesmo método (brotli -q 11 por chunk
+   referenciado no HTML, deduplicado, somado por extensão) e confirmou:
+   **148 945 B é o valor correto.** O erro estava na primeira redação da
+   spec §3, ao repartir o total já correto (153 763 B para `/pt/`, por
+   exemplo) nas quatro colunas — um chunk ficou de fora da soma da coluna
+   JS, então a coluna mostrava 145 877 B enquanto o total já continha os
+   148 945 B certos. Prova disso: somando documento + CSS + 145 877 (o
+   valor antigo) dá 150 695 B para `/pt/`, que **não bate** com o total
+   153 763 B publicado desde sempre; somando com 148 945 B dá exatamente
+   153 763 B. Ou seja, os totais sempre estiveram certos — só a coluna JS
+   estava errada, e a tarefa 0 achou isso antes de virar denominador do
+   experimento.
+
+   A spec §3 e a Tarefa 0 do plano já foram corrigidas pelo controlador
+   (commits `cc9dcdd` e o seguinte, fora deste repositório de relatório —
+   ver `docs/superpowers/specs/` e `docs/superpowers/plans/` na branch).
+   Este relatório usa o valor corrigido, 148 945 B, nas quatro linhas da
+   tabela acima.
 2. **`total-byte-weight` bate exato com a soma manual de `transferSize`**
    do `network-requests` audit (217 303 B), o que valida o número de
    "transferido" independentemente do audit agregado.
@@ -307,10 +320,12 @@ brutos dos relatórios, não de inferência.
 
 ## Preocupações
 
-- **Discrepância não resolvida na coluna JS da tabela de peso brotli**
-  (item 1 da auto-revisão acima). Os valores de documento e CSS bateram
-  exatos; o de JS não. Uso o valor do brief de qualquer forma, por ser
-  normativo, mas registro a discrepância para quem for investigar depois.
+- Nenhuma pendente sobre os números deste relatório. A única encontrada
+  durante a auto-revisão — a coluna JS da tabela de peso brotli batendo
+  145 877 B em vez de 148 945 B — já foi investigada, escalada ao
+  controlador e corrigida na spec §3 e no plano (ver item 1 de "Achados da
+  auto-revisão" acima). Os valores de LCP, CLS e transferido que esta
+  tarefa mediu não foram tocados por essa correção.
 - Só medi `/pt/` com Lighthouse (é a única rota que a spec §8 usa como
   limiar de LCP/CLS, e é a única que o brief pede no comando do passo 3).
   Não medi `/pt/sobre/`, `404.html` nem a casca `/` — não foi pedido, mas
