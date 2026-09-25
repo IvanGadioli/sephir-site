@@ -320,3 +320,16 @@ img { max-width: 100%; display: block; }
 .caixa { background: var(--cor-void2); border: 1px solid var(--cor-border); padding: 2.5rem; }
 .caixa__titulo { font-size: 1.25rem; color: var(--cor-stardust); margin-bottom: 1rem; }
 .caixa__corpo { font-size: 0.9375rem; line-height: 1.7; color: var(--cor-muted); max-width: 760px; }
+
+.erro { position: relative; min-height: 100svh; display: grid; place-items: center; }
+.erro__miolo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6rem 1.5rem 3rem;
+}
+.erro__miolo img { opacity: 0.9; height: auto; margin-bottom: 2.5rem; max-width: 60vw; }
+.erro__codigo { letter-spacing: 0.3em; color: var(--cor-amber); margin-bottom: 1.75rem; font-size: 0.875rem; }
+.erro__miolo h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 1.25rem; }
+.erro__texto { color: var(--cor-muted); max-width: 520px; line-height: 1.6; margin-bottom: 2.5rem; }
