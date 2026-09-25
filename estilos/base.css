@@ -172,3 +172,16 @@ img { max-width: 100%; display: block; }
 @media (max-width: 767px) {
   .linha--estado, .linha--portao { grid-template-columns: 1fr; gap: 0.5rem; }
 }
+
+.seta__regua { width: 64px; height: 1px; background: var(--cor-amber); margin-bottom: 1rem; }
+.seta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  font-size: 0.875rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--cor-stardust);
+}
+.seta:hover { color: var(--cor-amber); }
