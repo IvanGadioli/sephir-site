@@ -115,7 +115,7 @@ orçado como meta**. O que esta branch promete é falseável de outro jeito:
 > de aplicação nas cinco rotas.
 
 Registra-se também que a pipeline de portões orçou 25 kB de CSS e gastou 1,5 kB,
-enquanto 146 kB de JS passaram sem orçamento. **O orçamento mirou na coisa
+enquanto 149 kB de JS passaram sem orçamento. **O orçamento mirou na coisa
 errada** — e isso é resultado do experimento, não crítica de bastidor.
 
 ---

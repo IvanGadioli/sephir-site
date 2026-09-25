@@ -1073,7 +1073,8 @@ sem atenuar.]
 ## O que o experimento descobriu sobre processo
 
 1. **O orçamento da pipeline mirou na coisa errada.** 25 kB orçados de CSS, 1,5 kB
-   gastos, e 146 kB de JS passando sem orçamento nenhum. [confirmar com o medido]
+   gastos, e 149 kB de JS passando sem orçamento nenhum — 96,9% do peso da home.
+   [confirmar com o medido]
 2. **As quatro camadas de teste convergiram para os oráculos W\* descartados.**
    [dizer quais, nominalmente, e qual medida cada uma reproduziu] Se dois
    processos independentes chegam nas mesmas medidas, a medida era necessária e
