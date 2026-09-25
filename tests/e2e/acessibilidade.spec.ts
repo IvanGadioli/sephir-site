@@ -1,7 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { ROTAS as ROTAS_DO_SITE } from '../../lib/rotas.ts';
 
-const ROTAS = ['/', '/pt/', '/pt/sobre/', '/pt/como-e-feito/', '/rota-que-nao-existe/'];
+// Derivado de `lib/rotas.ts`, não digitado à mão: uma rota nova acrescentada lá
+// passa a ser varrida pelo axe automaticamente. O devlog já está previsto para
+// uma rodada futura, e uma lista local não o acompanharia — o site ganharia
+// rota sem cobertura de acessibilidade, em silêncio.
+// A rota inexistente entra à parte de propósito: ela não é rota do site, é o
+// caminho que faz o host servir o 404.
+const ROTAS = [...ROTAS_DO_SITE.map((r) => r.rota), '/rota-que-nao-existe/'];
 
 const TAGS_WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
