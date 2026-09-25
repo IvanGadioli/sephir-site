@@ -12,27 +12,29 @@ function listarFontes(raiz: string): string[] {
   return achados;
 }
 
-// Achado da própria auto-revisão desta tarefa: um `toContain(hook)` cru acerta
-// também um comentário em prosa que só *explica* por que o hook não foi
-// usado (caso real: componentes/Topo.tsx linha 5, citando `usePathname` para
-// justificar por que o componente continua no servidor). Isso é falso
-// positivo do teste, não vazamento real — a asserção quer pegar uso de hook,
-// não a palavra. Descontar comentário aqui; `://` fica de fora do corte para
-// não mutilar URL como `https://github.com/...` num atributo `href`.
-function semComentarios(texto: string): string {
-  return texto.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
+// Diretiva: ancorada em início de linha. Prosa que mencione a diretiva não casa.
+const DIRETIVA_CLIENTE = /^\s*(['"])use client\1/m;
+
+// Hook: casa a CHAMADA, não a palavra. Foi o falso positivo da primeira execução
+// desta tarefa — `componentes/Topo.tsx:5` menciona `usePathname` em prosa, sem
+// parêntese, para explicar por que o componente continua no servidor. Uma menção
+// não é um uso. Casar a sintaxe de chamada resolve isso sem precisar descontar
+// comentário (a correção anterior, com `semComentarios`, foi removida — trazia
+// dois casos de borda simétricos: apagava o resto de uma linha com URL
+// protocol-relative como `href="//exemplo.com"`, e preservava um comentário
+// colado após dois-pontos como `case 'x':// nota`). Efeito colateral bom e
+// intencional: um hook comentado, tipo `// const [x] = useState(false)`,
+// também reprova — código de cliente morto dentro de componente de servidor é
+// sujeira que vale sinalizar, não é bug deste teste.
+const HOOKS_CLIENTE = ['useState', 'useEffect', 'useRef', 'usePathname', 'useRouter'];
+const chamadaDeHook = (hook: string) => new RegExp(`\\b${hook}\\s*\\(`);
 
 describe("a fronteira de 'use client'", () => {
   it('só aparece dentro de componentes/heroi/', () => {
-    const fontes = [...listarFontes('app'), ...listarFontes('componentes'), ...listarFontes('lib')];
-    const clientes = fontes.filter((f) => {
-      const texto = readFileSync(f, 'utf8');
-      return /^\s*(['"])use client\1/m.test(texto);
-    });
-    for (const cliente of clientes) {
-      expect(cliente.startsWith(join('componentes', 'heroi'))).toBe(true);
-    }
+    const fora = [...listarFontes('app'), ...listarFontes('componentes'), ...listarFontes('lib')]
+      .filter((f) => DIRETIVA_CLIENTE.test(readFileSync(f, 'utf8')))
+      .filter((f) => !f.startsWith(join('componentes', 'heroi')));
+    expect(fora).toEqual([]);
   });
 
   it('nenhuma rota, nenhum layout e nenhum dos seis componentes é cliente', () => {
@@ -41,20 +43,20 @@ describe("a fronteira de 'use client'", () => {
       'componentes/Topo.tsx', 'componentes/Rodape.tsx', 'componentes/Faixa.tsx',
       'componentes/Secao.tsx', 'componentes/Linha.tsx', 'componentes/Seta.tsx',
     ];
-    for (const arquivo of proibidos) {
-      expect(readFileSync(arquivo, 'utf8')).not.toContain('use client');
-    }
+    const clientes = proibidos.filter((f) => DIRETIVA_CLIENTE.test(readFileSync(f, 'utf8')));
+    expect(clientes).toEqual([]);
   });
 
   it('nenhum hook de cliente vaza para um componente de servidor', () => {
-    const fontes = listarFontes('componentes').filter(
+    const vazamentos: string[] = [];
+    for (const arquivo of listarFontes('componentes').filter(
       (f) => !f.startsWith(join('componentes', 'heroi')),
-    );
-    for (const arquivo of fontes) {
-      const texto = semComentarios(readFileSync(arquivo, 'utf8'));
-      for (const hook of ['useState', 'useEffect', 'useRef', 'usePathname', 'useRouter']) {
-        expect(texto).not.toContain(hook);
+    )) {
+      const texto = readFileSync(arquivo, 'utf8');
+      for (const hook of HOOKS_CLIENTE) {
+        if (chamadaDeHook(hook).test(texto)) vazamentos.push(`${arquivo}: ${hook}`);
       }
     }
+    expect(vazamentos).toEqual([]);
   });
 });
