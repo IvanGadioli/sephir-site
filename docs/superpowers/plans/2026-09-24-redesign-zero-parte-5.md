@@ -669,10 +669,15 @@ Em `componentes/heroi/renderer.ts`:
    `Math.min(Math.max(devicePixelRatio, 1), 2)` no começo;
 2. dentro do laço de quadro, chame
    `monitor.registrar({ deltaMs, ativo: visivel && intersectando, renderizado: true, fpsAlvo: 30 })`;
-3. no `aoDegradar`, fixe o DPR em `1`, redimensione a superfície e os alvos, e
-   chame `monitor.reiniciar()`;
-4. se depois da queda o laço ainda não sustentar — um segundo monitor, agora com
-   `jaDegradou` próprio — pare o laço e deixe o pôster. Um sinalizador
+3. no `aoDegradar`, fixe o DPR em `1` e redimensione a superfície e os alvos;
+4. **troque o monitor por uma instância nova**, e não chame `reiniciar()` na
+   mesma. Isto foi corrigido durante a Tarefa 20: a primeira redação deste passo
+   dizia "chame `monitor.reiniciar()`" e depois pedia "um segundo monitor, agora
+   com `jaDegradou` próprio" — as duas coisas são incompatíveis. O `reiniciar()`
+   zera só `acumuladoMs` e `quadros`, **nunca** `jaDegradou`, e a guarda
+   `if (jaDegradou) return` deixaria a instância permanentemente muda. Só uma
+   instância nova pode detectar a segunda queda;
+5. se depois da queda o laço ainda não sustentar, pare o laço e deixe o pôster. Um sinalizador
    `desligado` no componente basta: o `Canvas` volta `pintando` para `false` e o
    CSS devolve `opacity: 0`.
 
