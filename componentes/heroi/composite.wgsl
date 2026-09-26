@@ -1,6 +1,15 @@
 // Derivado do exemplo `optimized-black-hole` da vgpu.
 // Fonte: https://vgpu.sh/examples/optimized-black-hole
 // Obtido pela skill `vgpu` v0.3.1 em 2026-09-24. Licença do projeto vgpu.
+//
+// Alteração de valor deliberada (Tarefa 19, decisão do titular): o upstream traz
+// `const SATURATION: f32 = 0.0`, aqui é `1.0`. Com 0.0, `mix(vec3f(luma), color,
+// SATURATION)` descarta inteiro o gradiente térmico do disco calculado logo acima
+// em `tonemap()` — e esse gradiente (`#FF8F2B` no calor médio, `#FFF0D4` no calor
+// alto) bate quase exatamente com `--cor-amber` (`#E8963A`) e `--cor-stardust`
+// (`#F4EFE6`) da marca. O shader já computava a paleta do projeto; a constante em
+// 0.0 é que jogava essa cor fora, saindo em cinza puro. É a única alteração de
+// valor (não só de forma de API) em código de terceiro nesta rodada.
 
 // Combine bloom levels, tone map, vignette, and convert to display output.
 
@@ -16,7 +25,7 @@ struct Composite {
 @group(0) @binding(5) var linearSampler: sampler;
 
 const EXPOSURE: f32 = 1.15;
-const SATURATION: f32 = 0.0;
+const SATURATION: f32 = 1.0;
 
 fn aces(x: vec3f) -> vec3f {
   let a = 2.51;
