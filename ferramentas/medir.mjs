@@ -59,6 +59,71 @@ export function medirHeroiPorChunk(raiz) {
   return total;
 }
 
+// Terceiro método, acrescentado depois que o piso reprovou nos dois de cima.
+// `medirRota` e `medirHeroiPorChunk` só leem `/_next/static/...` de dentro do
+// HTML exportado — e o HTML não vê import dinâmico. `next/dynamic(() =>
+// import('./Canvas.tsx'), { ssr: false })` (componentes/heroi/index.tsx) não
+// injeta preload/<script> para o alvo do import em export estático: o nome do
+// chunk pesado só existe como string dentro de OUTRO chunk, resolvido pelo
+// runtime do bundler quando o import() dispara no navegador. Os dois métodos
+// acima são cegos ao mesmo ponto, sob duas fórmulas — por isso concordam no
+// mesmo número pequeno demais (achado registrado em
+// tests/build/peso-heroi.test.ts e no report da Tarefa 21).
+//
+// Aqui quem decide "quais arquivos" é o navegador de verdade: abre cada rota
+// numa aba própria, grava todo request que bate em `_next/static/`, e a
+// diferença de conjuntos entre a home e "Sobre" é o custo do herói. O "quanto
+// cada um pesa" continua vindo do brotli em disco (`brotli()` acima), não do
+// tamanho transferido pela resposta — o servidor de teste serve sem
+// compressão, então o `transfer size` mentiria.
+//
+// `urlBase` aponta para um servidor HTTP já no ar na frente de `raiz` (por
+// exemplo `tests/support/servidor-estatico.mjs raiz porta`) — a função não
+// sobe nem derruba servidor, só navega. Import do Playwright é dinâmico e só
+// acontece dentro da função: as outras três funções e o CLI continuam sem
+// depender dele.
+export async function medirHeroiPorNavegador(urlBase, raiz) {
+  const { chromium } = await import('@playwright/test');
+
+  const requisitados = async (rota) => {
+    const browser = await chromium.launch({ executablePath: '/usr/bin/chromium' });
+    try {
+      const page = await browser.newPage();
+      const vistos = new Set();
+      page.on('response', (r) => {
+        const m = r.url().match(/\/_next\/static\/.+/);
+        if (m) vistos.add(m[0]);
+      });
+      await page.goto(`${urlBase}${rota}`, { waitUntil: 'load' });
+      // Dá tempo ao import dinâmico de resolver: o canvas só carrega a vgpu
+      // depois de `criarRenderer(...).pronto`, então esperar só o `load` do
+      // documento mede cedo demais. `document.fonts.ready` mais uma folga
+      // cobre tanto o caminho feliz (WebGPU disponível, canvas monta) quanto
+      // o headless sem GPU (o import ainda dispara, só a pintura que falha).
+      await page.evaluate(() => document.fonts.ready).catch(() => {});
+      await page.waitForTimeout(1_500);
+      return vistos;
+    } finally {
+      await browser.close();
+    }
+  };
+
+  const home = await requisitados('/pt/');
+  const sobre = await requisitados('/pt/sobre/');
+  const exclusivos = [...home].filter((url) => !sobre.has(url)).sort();
+
+  let total = 0;
+  const detalhe = {};
+  for (const url of exclusivos) {
+    const arquivo = join(raiz, url.replace(/^\//, ''));
+    const bytes = existsSync(arquivo) ? brotli(arquivo) : 0;
+    detalhe[url] = bytes;
+    total += bytes;
+  }
+
+  return { total, detalhe, home: [...home].sort(), sobre: [...sobre].sort(), exclusivos };
+}
+
 // `base` fixa a raiz original através da recursão: sem isso, a chamada
 // recursiva `listar(caminho, sufixo)` promove o subdiretório a `raiz`, e
 // `relative(raiz, caminho)` devolve só o nome do arquivo — perdendo o prefixo
