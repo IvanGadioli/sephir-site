@@ -19,6 +19,10 @@ export interface AmostraDeQuadro {
 export function criarMonitorDeQuadro({ aoDegradar }: { aoDegradar: (motivo: string) => void }) {
   let acumuladoMs = 0;
   let quadros = 0;
+  // Mão única, de propósito: `jaDegradou` nunca volta a `false`. O FPS
+  // apresentado melhora no instante em que a qualidade cai, o que argumentaria
+  // imediatamente pela volta — e o herói oscilaria para sempre. Quem detecta a
+  // segunda queda é uma instância nova de monitor, não este flag reaberto.
   let jaDegradou = false;
 
   function reiniciar() {
