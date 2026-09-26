@@ -10,6 +10,12 @@ Todo número deste relatório vem de comando rodado nesta sessão, com a saída
 colada no `task-23-report.md` ao lado. Onde não foi possível medir, está escrito
 "não medido" e o motivo.
 
+Uma ressalva de reprodutibilidade: no `medir.mjs`, as colunas `css` e `js`
+reproduzem byte a byte entre builds, mas a coluna **`doc` varia alguns bytes**
+(≤ 14 B observados) de um `next build` para o outro, por churn de build id. Nenhum
+número publicado aqui depende da coluna `doc`. A árvore do `main`, sendo build
+congelado em disco, reproduz inteira ao byte.
+
 ---
 
 ## A hipótese, como estava escrita
@@ -170,7 +176,10 @@ Não é o tempo de parede da rodada — exclui revisão, re-revisão, o trabalho
 controlador e as duas interrupções de sessão.
 
 **O que este total não inclui, e não é pouco:** o contexto do controlador — 24
-dispatches longos, 24 revisões, 14 re-revisões, a leitura do ledger e as
+dispatches longos, as 23 revisões e as 9 re-revisões da tabela acima **mais as
+rodadas de fix que não geram agente novo** (é daí que vinham os "24 revisões, 14
+re-revisões" da ressalva 2 do `custo-subagentes.md`, que contam trabalho do
+controlador e não seats de subagente), a leitura do ledger e as
 verificações próprias. A tabela é explícita sobre isso. O número de 4 886 624
 tokens é portanto um **piso** do custo da rodada, não o custo.
 
@@ -186,31 +195,48 @@ indiferenciado por agente, sem separar entrada, saída, leitura de cache e
 escrita de cache. E as taxas dessas categorias diferem por até **50×** — saída
 de sonnet a US$ 15,00/MTok contra leitura de cache a US$ 0,30/MTok.
 
-Os limites que isso produz mostram por que a conta não fecha:
+Os limites aritméticos brutos são estes:
 
-| | piso (tudo leitura de cache) | teto (tudo saída) |
+| | piso (tudo leitura de cache) | teto aritmético (tudo saída) |
 |---|---|---|
 | haiku, 914 475 tk | US$ 0,09 | US$ 4,57 |
 | sonnet, 3 972 149 tk | US$ 1,19 | US$ 59,58 |
 | **total** | **US$ 1,28** | **US$ 64,15** |
 
-Uma faixa de 50× não é uma estimativa, é a declaração de que o dado não
-suporta a pergunta. Em trabalho de subagente a maior parte dos tokens é
-contexto reenviado a cada turno — logo o valor real fica muito mais perto do
-piso que do teto — mas **"muito mais perto" não é um número**, e o instrumento
-que produziria o número (repartição por categoria, por agente) não foi
-instrumentado nesta rodada.
+> **Correção de 2026-09-26, achada pela revisão desta tarefa.** A redação
+> original parava aqui e concluía que "uma faixa de 50× não é uma estimativa, é
+> a declaração de que o dado não suporta a pergunta". **Essa conclusão
+> over-claims**, e o dado que a refuta está nesta mesma seção.
+>
+> O teto supõe que os 4 886 624 tokens sejam **todos de saída**. Mas os 252,2 min
+> de tempo de parede medidos para os 2 639 469 tokens de implementação dão 10 466
+> tokens/min — **174 tokens/s sustentados** se tudo fosse saída. Não é atingível,
+> e a maior parte desse tempo de parede é espera de ferramenta e não geração (a
+> T19: 350 chamadas de ferramenta em 57 min). **O teto "tudo saída" está
+> descartado por medição**, e a faixa real é bem mais estreita que 50×.
 
-**Contra o que se compararia:** o canvas de design custou **US$ 3,32**, medido
-nos transcritos, em 31 min de duas sessões de subagente. É o único ponto de
-comparação monetário que existe. Os relatórios da pipeline de portões no vault
-`sephir-site-workspace` não foram lidos nesta tarefa, então **o lado direito da
-comparação de custo não foi medido** — e sem ele a cláusula de custo da hipótese
-não é decidível.
+**Uma estimativa ancorada, explícita e falseável.** O canvas de design custou
+**US$ 3,32 em 31 min** de duas sessões de subagente — mesma máquina, mesma
+ferramenta, mistura de modelo e densidade de chamada comparáveis. São US$
+0,107/min. Aplicado aos 252,2 min de implementação: **~US$ 27**. A premissa é
+nomeada e é o ponto fraco — se a mistura de modelo ou a densidade de ferramenta
+divergirem, a estimativa anda com elas. Mas é um número que se pode derrubar,
+que é mais do que a faixa oferecia.
+
+O que continua verdadeiro: **não dou número único para o custo da rodada.** A
+repartição entrada/saída/cache não existe no dado registrado, e inventar uma
+taxa seria pior que não responder. O que muda é que a recusa agora vem com um
+intervalo útil e uma âncora medida, em vez de uma faixa de 50× apresentada como
+impossibilidade.
+
+**Contra o que se compararia:** nada. Os relatórios da pipeline de portões no
+vault `sephir-site-workspace` não foram lidos nesta tarefa, então **o lado
+direito da comparação de custo não foi medido** — e sem ele a cláusula de custo
+da hipótese não é decidível, com ou sem a estimativa acima.
 
 ### Instrumentação que a próxima rodada precisa
 
-O custo é o único dos cinco termos da hipótese que esta rodada não conseguiu
+O custo é o único dos seis termos da hipótese que esta rodada não conseguiu
 decidir, e a causa é instrumentação ausente, não medição difícil. Registrar por
 agente: tokens de entrada, de saída, de leitura de cache e de escrita de cache,
 mais o modelo e a versão. São quatro números em vez de um, e tornam a conversão
@@ -220,15 +246,24 @@ aritmética.
 
 ## O veredito
 
-**A hipótese falhou.** Falhou em um dos cinco termos, e não nos outros quatro.
+**A hipótese falhou.** Falhou em um dos seis termos, passou em quatro, e um não é
+decidível.
 
 | termo da hipótese | veredito |
 |---|---|
 | cinco rotas | **cumprido** — `/`, `/pt/`, `/pt/sobre/`, `/pt/como-e-feito/`, `404.html`, travadas por igualdade estrita |
 | LCP não pior que o `main` | **cumprido** — melhor sob os dois instrumentos |
 | CLS não pior que o `main` e ≤ 0,02 | **cumprido** — 0 nas 20 execuções |
+| herói WebGPU dentro do limiar da spec §8 | **cumprido** — 68 233 B contra 97 280 B, 29 047 B de folga |
 | zero violação de axe | **FALHOU** — 10 nós, por escolha declarada do titular |
 | custo de rodada menor que a pipeline de portões | **não decidível** — o lado da pipeline não foi medido |
+
+> **Correção de 2026-09-26, achada pela revisão desta tarefa.** Esta tabela tinha
+> cinco linhas e falava de "os cinco termos". A hipótese da spec §1 — copiada
+> literalmente vinte linhas acima neste mesmo documento — tem **seis**, e o que
+> ficou de fora foi o limiar do herói. Ele é um dos quatro números do título deste
+> relatório e **passou com 29 047 B de folga**, então a omissão foi contra a
+> rodada. Mas era a tabela de veredito do experimento, e ela contava errado.
 
 A regra da spec §1 é explícita: *"Se qualquer um desses falhar, o experimento
 falhou e isso fica registrado."* O axe falhou. Registrado.
@@ -258,9 +293,15 @@ verificação era um arquivo de distância.** O oráculo W3 do vault
 
 | Recurso | Teto do W3 | Medido (`main`) | Medido (`zero`) |
 |---|---|---|---|
+| HTML (doc da home) | 20 kB | 3 325 B (16,2%) | 4 125 B (20,1%) |
 | CSS | 25 kB | 1 493 B (5,8%) | 2 232 B (8,7%) |
 | JS de primeira carga | 130 kB | **148 945 B** | **149 164 B** |
 | pôster (LCP) | 150 kB | 35 372 B (1280×720) | 35 606 B (1280×726) |
+| total da home | 325 kB | 153 763 B (46,2%) | 157 050 B (47,2%) |
+
+*(As cinco linhas do `W3`, não um recorte. As duas que eu havia omitido — HTML e
+total da home — passam com folga larga, e a segunda reforça a tese desta seção:
+o orçamento de total também mirou em risco que não existia, por um fator de 2.)*
 
 *(kB = 1024 B nesta tabela, como na spec §8, que escreve "95 kB br (97 280 B)".
 O pôster novo é 6 px mais alto que o antigo — diferença medida, sem efeito no
@@ -284,7 +325,7 @@ igual nas duas árvores (148 945 vs 149 164 B, 219 B de diferença), e nenhum do
 dois processos moveu esse número. A casca de `meta refresh` em `/`, uma página
 sem uma linha de interação, baixa 149 164 B de JS.
 
-### 2. As quatro camadas de teste convergiram para os oráculos W\* — oito de onze
+### 2. As quatro camadas de teste convergiram para os oráculos W\* — cinco de onze, não oito
 
 A spec §7 previu a convergência. **Verifiquei nominalmente, oráculo por oráculo,
 contra `_fabrica/oraculos-web.md` e os arquivos de teste da branch:**
@@ -293,8 +334,8 @@ contra `_fabrica/oraculos-web.md` e os arquivos de teste da branch:**
 |---|---|---|---|
 | W1 contrato de rota | toda rota gera arquivo; nenhuma rota fora da tabela | `tests/build/arvore.test.ts` — "é exatamente os cinco HTML, nem mais nem menos" + "não vaza rota de devlog" | **sim**, nos dois sentidos; ferramenta diferente (fs vs playwright) |
 | W2 integridade de link | zero `href` interno sem destino | `tests/build/links.test.ts` | **sim** |
-| W3 orçamento de peso | peso por rota, brotli -q 11 | `ferramentas/medir.mjs` + `peso-heroi.test.ts` | **sim** na grandeza; brotli em disco em vez de lighthouse-ci |
-| W4 orçamento de tempo | LCP ≤ 2,5 s · CLS ≤ 0,05 · TBT ≤ 200 ms, perfil móvel | este relatório | **sim**, mesmo instrumento e perfil. TBT **não medido** |
+| W3 orçamento de peso | peso por rota, brotli -q 11 | `ferramentas/medir.mjs` (ferramenta de mão, **sem limiar**) + `peso-heroi.test.ts` (mede o herói, não a rota) | **medida convergente, asserção ausente** — nada nesta branch reprova se uma rota estourar 130 kB |
+| W4 orçamento de tempo | LCP ≤ 2,5 s · CLS ≤ 0,05 · TBT ≤ 200 ms, perfil móvel | este relatório, **à mão, uma vez** | **medida convergente, asserção ausente** — mesmo instrumento e perfil; TBT **não medido**; nenhum teste reprova regressão |
 | W5 acessibilidade | axe + contraste ≥ 4,5:1 | `tests/e2e/acessibilidade.spec.ts` | **sim** — e os dois réguas reprovam no mesmo elemento |
 | W6 degradação sem WebGPU | pôster aparece, texto aparece, zero erro de console | `tests/e2e/heroi.spec.ts` | **quase** — pôster e canvas sim; "zero erro no console" não é afirmado |
 | W8 caminhos internos | zero `href`/`src` interno quebrado | `links.test.ts` (src + fragmento) | **parcial** — sem helper de rota nesta branch, a regra do helper não se aplica |
@@ -303,13 +344,42 @@ contra `_fabrica/oraculos-web.md` e os arquivos de teste da branch:**
 | W7 citação íntegra | frontmatter do devlog | — | **não** — devlog fora de escopo (spec §2) |
 | W10 fidelidade ao mock | pixelmatch, ≤ 0,5% dos pixels | — | **não** — fidelidade julgada a olho e por diff de texto |
 
-**Oito reproduzidos, um parcial, dois não.** A previsão da spec §7 se confirma
-para a maioria: dois processos independentes, partindo do mesmo design, chegaram
-nas mesmas medidas com outros nomes. Onde isso vale, **a medida era necessária e
-a cerimônia em volta era opcional** — a asserção existe nos dois lados, o
-arquivo numerado por portão existe só num.
+**Cinco reproduzidos, quatro parciais, dois não.**
 
-Mas as duas exceções são as interessantes, e elas qualificam a conclusão:
+> **Correção de 2026-09-26, achada pela revisão desta tarefa — e é o achado mais
+> importante dela.** Esta seção dizia "oito reproduzidos, um parcial, dois não",
+> e concluía que "a asserção existe nos dois lados, o arquivo numerado por portão
+> existe só num". **Os dois números estavam inflados a favor desta rodada, e a
+> conclusão era falsa em dois oráculos.**
+>
+> A contagem: o `W6` estava marcado "quase" na própria tabela — e este mesmo
+> relatório escreve, mais abaixo, que "zero erro no console" não é afirmado por
+> nenhum teste desta branch — mas era contado entre os oito, enquanto o `W8`,
+> marcado "parcial", ficava fora. Duas linhas com o mesmo status, dois
+> tratamentos, e o arredondamento na direção favorável.
+>
+> A conclusão, que é pior: **nada nesta branch reprova se uma rota estourar os
+> 130 kB de JS do `W3`.** Os únicos tetos de peso afirmados são o chunk do herói
+> (97 280 B), o pôster (61 440 B) e o logo (30 720 B). O `medir.mjs` é ferramenta
+> de linha de comando sem limiar; o `peso-heroi.test.ts` mede o herói, não a rota.
+> O `W4` é medido uma vez, à mão, neste documento, por ninguém automaticamente.
+>
+> E isso fecha um círculo desconfortável com a seção anterior. Um parágrafo acima
+> eu condeno a pipeline por *"um orçamento cujo denominador mede outra coisa que
+> o numerador é pior que nenhum orçamento, porque produz verde"* — e **esta
+> branch não tem orçamento de rota nenhum**, que é estritamente pior que o
+> defeito que eu acabei de imputar. Eu tinha marcado isso como convergência.
+
+A previsão da spec §7 se confirma **em parte, e menos do que eu escrevi**: onde a
+convergência é real — contrato de rota, integridade de link, acessibilidade,
+token de cor, família de fonte — dois processos independentes partindo do mesmo
+design chegaram na mesma asserção com outros nomes, e ali **a medida era
+necessária e a cerimônia em volta era opcional**. Mas em peso e tempo houve
+convergência de *medida* sem convergência de *asserção*: os dois lados olham o
+número, e só um lado reprova quando ele passa do teto. A ausência de teto de rota
+nesta branch está registrada em "O que ficou por fazer", onde pertence.
+
+As exceções restantes qualificam ainda mais a conclusão:
 
 - **W10 (fidelidade ao mock por pixelmatch) não foi reproduzido, e é exatamente
   o oráculo que pegaria as divergências da seção seguinte.** Esta rodada
@@ -341,8 +411,13 @@ o Importante 2 da T15 ("plan-mandated, defeito MEU" — o comando do LEIA-ME que
 não rodava de diretório nenhum, achado porque o revisor **testou** em vez de
 ler) e o Importante da T16 (`toContain('use client')` cru, `plan-mandated`).
 
-E fora da contagem de severidade, o ledger tem **13 pontos onde o controlador
-atribui o defeito ao próprio plano ou brief.** A lista, com o que cada um era:
+E fora da contagem de severidade, o ledger tem **ao menos 13 pontos onde o
+controlador atribui o defeito ao próprio plano ou brief** — é piso, não contagem
+fechada: a revisão desta tarefa achou um 14º explícito (`progress.md:810`, o
+comentário do `renderer.ts:14` que reproduz a leitura errada do brief) e um 15º
+candidato (Ruling Q, "dois dos **meus** testes afirmavam comportamento default do
+framework"). O erro é contra a tese desta seção, que fica **mais** forte com os
+números certos. A lista dos 13 verificados, com o que cada um era:
 
 | # | Defeito do plano | Onde |
 |---|---|---|
@@ -360,7 +435,9 @@ atribui o defeito ao próprio plano ou brief.** A lista, com o que cada um era:
 | 12 | linha `Interfaces` do brief dizia que o `Topo` consome `brand` | Ruling I, T4 |
 | 13 | instrumento de verificação errado — pedi julgar report por diff, e report é git-ignored | Ruling P, T13 |
 
-Contra isso: **0 Crítico em 24 tarefas**, e o ledger registra que os
+Contra isso: **0 Crítico em 23 tarefas revisadas** — 21 com contagem registrada
+no ledger, mais T20 e T22, que fecharam "review clean" sem número; a T23 não
+tinha revisão quando esta linha foi escrita. E o ledger registra que os
 implementadores acharam defeitos por conta própria com regularidade — a T13
 achou o resíduo `out/404/` antes da revisão, a T20 achou e corrigiu uma corrida
 de uso-após-descarte durante a implementação, a T21 recusou o próprio resultado
@@ -427,12 +504,33 @@ asserção vale sempre.
 
 ### 5. O modelo barato transcreve bem e conta mal
 
-Cinco de cinco tarefas de haiku saíram com código correto e revisão limpa. Em
-duas delas (T6, T8) o **autorrelato quantitativo** estava errado — 28 linhas
+Foram **nove** tarefas de implementação em haiku (T3, T5, T6, T7, T8, T9, T11,
+T12, T15). **Oito fecharam com revisão limpa**; a **T15 voltou "PRECISA DE
+CORREÇÃO", com 2 Importantes e 2 Menores, e precisou de duas rodadas de fix** — e
+um dos Importantes dela era de implementação, não defeito de plano meu (a suíte
+do logo não travava largura nem ausência de alfa).
+
+> **Correção de 2026-09-26, achada pela revisão desta tarefa.** Esta seção dizia
+> "cinco de cinco tarefas de haiku saíram com código correto e revisão limpa".
+> Isso era **citação literal do `Ruling K refinado` no ledger, escrita quando só
+> cinco tarefas de haiku haviam rodado** — um placar parcial apresentado como
+> final, que excluía o único contraexemplo. A própria seção discutia a T9, que é
+> a sexta, o que deveria ter me avisado.
+>
+> É exatamente o modo de falha que eu declaro ter evitado quatro linhas abaixo:
+> *"o relatório do subagente não é fonte de número"*. Apliquei a regra aos quatro
+> números medidos e não a este. **O ledger também não é fonte de número** quando
+> a linha citada é um instantâneo de uma rodada em andamento.
+
+Em duas delas (T6, T8) o **autorrelato quantitativo** estava errado — 28 linhas
 onde o diff tinha 32, "todas as 8 classes" numa frase que lista 7. O Ruling K e
 seu refinamento resolveram proibindo a contagem em prosa, não trocando o modelo:
 *cole saída de ferramenta, ou descreva qualitativamente.* Funcionou em uma
 rodada, custo zero, e a T9 saiu com todo número reproduzindo saída colada.
+
+A conclusão da seção sobrevive — **o modelo barato transcreve bem e conta mal**,
+e os dois defeitos de contagem são de prosa, não de código. Mas a base amostral
+é de nove e não de cinco, e um em nove exigiu duas rodadas de correção.
 
 A mitigação que pegou o problema já existia: os prompts de revisão mandam tratar
 o report como afirmação não verificada. **O relatório do subagente não é fonte
@@ -559,10 +657,23 @@ O 58 do brief não reproduz.
   disparou em hardware. O monitor é puro e testado com amostras sintéticas; a
   integração nunca foi exercida por um dispositivo lento de verdade.
 - **"Zero erro no console" do W6 não é afirmado** por nenhum teste desta branch.
+- **Nenhum teto de peso por rota é afirmado.** É a lacuna que a revisão desta
+  tarefa achou, e é a mais embaraçosa da lista: os únicos tetos de peso que
+  reprovam nesta branch são o chunk do herói (97 280 B), o pôster (61 440 B) e o
+  logo (30 720 B). **Nada reprova se uma rota estourar os 130 kB de JS, os 20 kB
+  de HTML ou os 325 kB de total do `W3`** — o `medir.mjs` é ferramenta de mão sem
+  limiar, e o `peso-heroi.test.ts` mede o herói, não a rota. Eu havia contado isso
+  como convergência com o `W3` (ver a correção na seção 2). O `W4` tem o mesmo
+  problema: medido uma vez, à mão, neste documento. Enquanto isso não existir como
+  asserção, esta branch está **estritamente pior** que a pipeline no ponto que
+  este relatório usa para condená-la: lá o orçamento existe e mede a coisa errada;
+  aqui não existe.
 - **O lado da pipeline de portões na comparação de custo.** Os relatórios do
   `main` no vault `sephir-site-workspace` não foram lidos nesta tarefa. Sem
-  eles, a cláusula de custo da hipótese fica indecidível — e é a única das cinco
-  que fica.
+  eles, a cláusula de custo da hipótese fica indecidível — e é a única das seis
+  que fica. **Consequência direta:** as afirmações da seção 1 sobre o que os
+  relatórios de portão registraram ou não registraram não têm base, e a spec §3
+  foi corrigida para dizer isso.
 - **Repartição de tokens por categoria** (entrada / saída / leitura de cache /
   escrita de cache), sem a qual nenhuma rodada futura converte tokens em US$.
 

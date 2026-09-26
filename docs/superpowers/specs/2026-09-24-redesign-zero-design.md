@@ -124,15 +124,29 @@ Registra-se também que a pipeline de portões orçou 25 kB de CSS e gastou 1,5 
 > deixando ~16 kB de folga para código de aplicação.
 >
 > A correção deixa o achado **mais** afiado, não menos. A pipeline não falhou em
-> orçar o JS: ela orçou, e **estourou o próprio teto em cerca de 16 kB sem que
-> isso aparecesse em nenhum relatório de portão**. O real é 148 945 B, ou seja
-> **35 158 B de código de aplicação** onde o orçamento previa ~16 kB — mais que o
-> dobro. Um orçamento que ninguém confere no fechamento não é orçamento.
+> orçar o JS: ela orçou, e **estourou o próprio teto em cerca de 16 kB**. O real
+> é 148 945 B, ou seja **35 158 B de diferença entre a base que o orçamento
+> assume e o que o mesmo método de compressão mede por rota** — mais que o dobro
+> da folga prevista. **A causa dessa diferença não foi medida**, e a Tarefa 23
+> recusou-se a atribuí-la: parte é definição de instrumento (o `medir.mjs` desta
+> rodada soma todo `_next/static/*.js` referenciado no HTML; o `W3` manda medir
+> com `lighthouse-ci`), e chamá-la de "código de aplicação" é atribuição que o
+> dado não sustenta — a casca de `meta refresh` em `/`, sem uma linha de
+> aplicação, mede 149 164 B pelo mesmo método.
+>
+> **Correção de 2026-09-26, segunda passagem.** A redação anterior desta nota
+> dizia que o estouro passou "sem que isso aparecesse em nenhum relatório de
+> portão" e "sem ninguém notar". Eu não tenho base para isso: **os relatórios de
+> portão do vault não foram lidos nesta rodada** — a Tarefa 23 declara essa
+> lacuna duas vezes. Era o mesmo modo de falha que ela tinha acabado de corrigir
+> aqui: escrever sobre o vault sem abrir o arquivo. O que a medição sustenta é o
+> estouro (148 945 B contra os 133 120 B do teto). Se algum relatório de portão o
+> registrou, **não verificado**.
 >
 > A metade da afirmação que se sustenta é a do CSS: 25 kB orçados contra 1,5–2,2 kB
 > gastos, medido nas duas árvores. **O orçamento de CSS mirou onde não havia
-> risco, e o de JS foi estourado sem ninguém notar** — é essa a forma correta do
-> resultado, e ela é pior para a pipeline que a minha versão original.
+> risco, e o de JS foi estourado** — é essa a forma correta do resultado, e ela é
+> pior para a pipeline que a minha versão original.
 
 ---
 
@@ -417,8 +431,9 @@ renegocia por ter estourado.
 > marca, ou aceitar e documentar. **Ele escolheu aceitar e documentar**, para
 > preservar a fidelidade ao mock aprovado. A consequência fica registrada sem
 > atenuação: **o experimento falha este número por escolha declarada**, não por
-> limitação técnica, e usuários com baixa visão não conseguem ler esses dois
-> elementos. A correção de marca fica fora desta rodada.
+> limitação técnica, e usuários com baixa visão não conseguem ler a tagline do
+> rodapé — nem, provavelmente, o selo de fase, que o axe não consegue julgar.
+> A correção de marca fica fora desta rodada.
 | FPS | política da seção 5 | cap 30, queda a 24 por 2 s, desligamento |
 | JS de aplicação | `'use client'` só em `componentes/heroi/` | um ponto de entrada, dois arquivos, um chunk |
 
