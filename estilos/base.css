@@ -78,10 +78,38 @@ img { max-width: 100%; display: block; }
   font-size: 0.875rem;
   font-weight: 300;
   letter-spacing: 0.08em;
+}
+
+/* As duas navegações, UM contrato de estado (spec §4 e §6.3): ativo em
+   stardust, inativo em muted, ausente em muted, iguais no desktop e no painel
+   móvel. As cores vivem aqui em vez de junto do resto da tipografia porque o
+   defeito que a revisão final achou (I1 e I2) era de cascata, e a correção
+   precisa ser imune a ordem de declaração:
+
+   - I1: `.navegacao a` tem especificidade (0,1,1) e `.navegacao__ativo` só
+     (0,1,0). A primeira vencia, e o item da página atual ficava muted como os
+     outros três — nenhuma indicação visual de seção no desktop.
+   - I2: os <a> do painel móvel vivem em `.menu-movel__lista`, FORA de
+     `.navegacao`, então nenhuma das duas regras os alcançava e eles caíam no
+     `a { color: var(--cor-amber) }` global lá em cima — o INATIVO ficava
+     âmbar, a cor de acento e de ação, e a hierarquia de estado saía invertida
+     em relação ao desktop.
+
+   Os dois seletores abaixo são disjuntos por construção (`:not` de um lado, a
+   classe do outro) e têm a mesma especificidade (0,2,1), então trocar a ordem
+   das regras não muda a cor de nada — é isso, e não a posição no arquivo, que
+   protege a correção. A asserção que a trava está em
+   `tests/e2e/marca.spec.ts`. */
+.navegacao a:not(.navegacao__ativo),
+.menu-movel__lista a:not(.navegacao__ativo),
+.navegacao__ausente {
   color: var(--cor-muted);
 }
-.navegacao a:hover { color: var(--cor-stardust); }
-.navegacao__ativo { color: var(--cor-stardust); }
+.navegacao a.navegacao__ativo,
+.menu-movel__lista a.navegacao__ativo {
+  color: var(--cor-stardust);
+}
+.navegacao a:hover, .menu-movel__lista a:hover { color: var(--cor-stardust); }
 
 /* Abaixo de 768px a navegação de desktop some; o painel .menu-movel
    (details/summary, definido mais abaixo) assume no lugar dela. */
