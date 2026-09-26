@@ -245,9 +245,29 @@ exemplo — não está no chunk de entrada.
 2. `prefers-reduced-motion: reduce`. Com um buraco negro em rotação isso não é
    boa prática, é necessidade.
 3. Falha de `init()` ou de compilação.
+4. **Falha de GPU depois de o primeiro quadro já ter pintado** — perda de device
+   por reset de driver, troca de GPU num laptop híbrido, `requestDevice`
+   revogado sob pressão de memória. Neste caso o canvas já está montado e
+   opaco, então "não montar" não descreve a saída: o renderer **desliga**
+   (`desligar()`, que dispara `aoDesligar` → `setPintando(false)` no
+   `Canvas.tsx`), o `<canvas>` perde `heroi__canvas--visivel` e volta a
+   `opacity: 0`, e o pôster reaparece por baixo. O erro é registrado no console
+   e **não é relançado**: o `throw` viria de dentro de um callback de
+   `requestAnimationFrame`, onde ninguém pode capturá-lo, e o contrato do
+   `Canvas.tsx` já é "o visitante não tem o que fazer com um erro de WebGPU".
 
-Nos três casos o pôster permanece visível e nada mais acontece. O pôster nunca é
-removido do DOM — o canvas é sobreposto a ele.
+> **Acrescentado em 2026-09-26, achado pela revisão final (I10).** Esta lista
+> tinha três casos, e o quarto era o único em que a promessa do parágrafo abaixo
+> não valia: `lidarComFalha` chamava `descartarInterno()` em vez de `desligar()`,
+> então `aoDesligar` nunca disparava e o `<canvas>` ficava morto e **opaco por
+> cima** do pôster, congelado no último quadro ou em branco. E relançava de
+> dentro do rAF, virando `pageerror` na aba do visitante. Corrigido em
+> `componentes/heroi/renderer.ts`, com os quatro casos de
+> `tests/unit/heroi-falha.test.ts` travando o comportamento — os quatro
+> conferidos vermelhos contra o código anterior.
+
+Nos quatro casos o pôster permanece visível e nada mais acontece. O pôster nunca
+é removido do DOM — o canvas é sobreposto a ele.
 
 ### Enquadramento — decisão (a)
 

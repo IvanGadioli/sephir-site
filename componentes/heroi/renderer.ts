@@ -220,7 +220,12 @@ export function criarRenderer({
         try {
           vgpu.frame(gpuAtivo, renderizarQuadro);
         } catch (error) {
-          lidarComFalha(error);
+          // `lidarComFalha` não relança mais daqui (I10), então o `return` é
+          // quem garante que este tick não reagende: `desligar()` já parou o
+          // laço, mas depender de `parado` seria depender de `laco` estar
+          // atribuído — e ele pode estar `undefined` com um tick em voo.
+          lidarComFalha(error, 'rAF');
+          return;
         }
       }
       if (!parado) handleQuadro = requestAnimationFrame(tick);
@@ -303,7 +308,8 @@ export function criarRenderer({
       destroyTargets(targetsAnteriores);
       forcarBake = true;
     } catch (error) {
-      lidarComFalha(error);
+      // `aplicarResize` também corre dentro de um `requestAnimationFrame`.
+      lidarComFalha(error, 'rAF');
     }
   };
   const redimensionar = (tamanho: TamanhoRender) => {
@@ -361,9 +367,31 @@ export function criarRenderer({
     gpu?.dispose();
   };
 
-  function lidarComFalha(error: unknown): never {
-    descartarInterno();
-    throw error;
+  // Caminho único de falha do renderer. Dois defeitos foram corrigidos aqui, os
+  // dois achados da revisão final (I10) — é o quarto caso de fallback do herói,
+  // agora na spec §5: falha DEPOIS de o primeiro quadro ter pintado.
+  //
+  // 1. `desligar()`, não `descartarInterno()`. Descartar sem desligar deixa
+  //    `aoDesligar?.()` sem disparar, logo `setPintando(false)` nunca corre no
+  //    `Canvas.tsx` e o <canvas> fica com `heroi__canvas--visivel` e
+  //    `opacity: 1` POR CIMA do pôster — congelado no último quadro ou em
+  //    branco, dependendo do que o navegador faz com a superfície depois de
+  //    `gpu.dispose()`. O caminho de degradação já fazia certo
+  //    (`aoDegradarSegundaVez` → `desligar()`); este não, e era o único caso em
+  //    que a promessa da spec §5 ("o pôster permanece visível") não valia.
+  //
+  // 2. Relançar só onde existe captor. `throw` de dentro de um callback de
+  //    `requestAnimationFrame` não tem quem o pegue: vira `pageerror` no
+  //    navegador do visitante. O único `catch` do lado do React está na promessa
+  //    `pronto` (`Canvas.tsx:53`), e ele já decidiu o contrato para `init()` —
+  //    "o visitante não tem o que fazer com um erro de WebGPU". Então: do
+  //    caminho de `pronto` relança, porque é assim que a promessa rejeita e o
+  //    Canvas não liga `pintando`; de dentro do rAF (laço de quadro e resize)
+  //    registra no console e para.
+  function lidarComFalha(error: unknown, origem: 'pronto' | 'rAF'): void {
+    desligar();
+    if (origem === 'pronto') throw error;
+    console.error('herói: falha de WebGPU depois do primeiro quadro; o pôster assume.', error);
   }
 
   const pronto = (async () => {
@@ -416,7 +444,7 @@ export function criarRenderer({
     reconciliarLaco();
   })().catch((error: unknown) => {
     if (descartado) return;
-    lidarComFalha(error);
+    lidarComFalha(error, 'pronto');
   });
 
   return {
