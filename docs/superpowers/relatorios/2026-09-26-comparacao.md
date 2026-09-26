@@ -506,7 +506,7 @@ Contexto de tamanho, não medida de qualidade.
 
 | | `main` | `zero/redesign` |
 |---|---|---|
-| commits | 25 | **53** (os 53 assinados, `%G?` = `G`) |
+| commits | 25 | **53** (os 53 assinados, `%G?` = `G`) — medido em `7726259`, antes do commit deste relatório, que faz 54 |
 | arquivos versionados, sem `docs/` | 63 | 83 |
 | arquivos de fonte (sem lock, sem binário) | 59 | 78 |
 | linhas de fonte | 3 019 | **5 624** |
