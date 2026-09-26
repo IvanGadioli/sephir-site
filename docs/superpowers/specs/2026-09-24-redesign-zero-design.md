@@ -114,9 +114,25 @@ orçado como meta**. O que esta branch promete é falseável de outro jeito:
 > Nenhum componente `'use client'` além do canvas do herói, e nenhum JavaScript
 > de aplicação nas cinco rotas.
 
-Registra-se também que a pipeline de portões orçou 25 kB de CSS e gastou 1,5 kB,
-enquanto 149 kB de JS passaram sem orçamento. **O orçamento mirou na coisa
-errada** — e isso é resultado do experimento, não crítica de bastidor.
+Registra-se também que a pipeline de portões orçou 25 kB de CSS e gastou 1,5 kB.
+
+> **Correção de 2026-09-26, achada pela Tarefa 23.** A primeira redação desta
+> seção dizia que "149 kB de JS passaram sem orçamento". **Isso é falso**, e eu
+> nunca fui verificar antes de escrever. O oráculo `W3` do vault
+> (`_fabrica/oraculos-web.md`, linha 42) **orça JS de primeira carga em 130 kB**,
+> calibrado contra uma base do App Router **medida** em 113 787 B em 2026-09-10,
+> deixando ~16 kB de folga para código de aplicação.
+>
+> A correção deixa o achado **mais** afiado, não menos. A pipeline não falhou em
+> orçar o JS: ela orçou, e **estourou o próprio teto em cerca de 16 kB sem que
+> isso aparecesse em nenhum relatório de portão**. O real é 148 945 B, ou seja
+> **35 158 B de código de aplicação** onde o orçamento previa ~16 kB — mais que o
+> dobro. Um orçamento que ninguém confere no fechamento não é orçamento.
+>
+> A metade da afirmação que se sustenta é a do CSS: 25 kB orçados contra 1,5–2,2 kB
+> gastos, medido nas duas árvores. **O orçamento de CSS mirou onde não havia
+> risco, e o de JS foi estourado sem ninguém notar** — é essa a forma correta do
+> resultado, e ela é pior para a pipeline que a minha versão original.
 
 ---
 
@@ -380,8 +396,17 @@ renegocia por ter estourado.
 > Tarefa 17 — a primeira a abrir navegador real — achou uma violação WCAG 2 AA
 > `color-contrast` de verdade: `--cor-faint` (#4A5468) sobre `--cor-void`
 > (#05070E) dá **2,64:1**, e texto pequeno exige 4,5:1. Ela aparece nas cinco
-> rotas e nos dois viewports, sempre pelo mesmo par de cores, em dois elementos:
-> a tagline do rodapé (13 px) e o selo de fase (11 px).
+> rotas e nos dois viewports, sempre pelo mesmo par de cores, **num elemento**:
+> a tagline do rodapé (13 px).
+>
+> **Correção de 2026-09-26, achada pela Tarefa 23:** esta nota dizia "dois
+> elementos", incluindo o selo de fase (11 px). A medição diz **um**. O selo fica
+> sobre os véus de gradiente do herói, onde o axe cai em `incomplete` em vez de
+> `violation`, porque o fundo depende do pixel renderizado. A Tarefa 17 já havia
+> estabelecido isso — a lista de aceitos no teste tem só `.rodape__tagline` — e eu
+> deduzi "dois" lendo o CSS, sem medir, e nunca corrigi a spec. O selo **também**
+> tem contraste insuficiente onde o fundo é escuro o bastante; a diferença é que o
+> axe não consegue provar, não que o problema não exista.
 >
 > A causa está na marca, não no site: o `theme.ts` oficial define `faint` como
 > "texto terciário, captions, placeholders" — um uso que essa cor não serve de
