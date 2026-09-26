@@ -38,6 +38,15 @@ createServer((req, res) => {
     res.end('alvo ausente: rode `npm run build` antes dos testes');
     return;
   }
+  // Sem Content-Length (vira Transfer-Encoding: chunked) — ao contrário do
+  // Cloudflare Pages, que sempre declara o tamanho. A Tarefa 22 achou que essa
+  // ausência, combinada com certos builds do Chromium, faz um WebP grande e
+  // ruidoso (não um PNG simples) renderizar em cinza puro na tela, embora o
+  // arquivo tenha cor real — ver `ferramentas/capturar-poster.md`, achado 2.
+  // Não é bug de produção; é só uma pegadinha para quem tirar screenshot de
+  // pixel via ESTE servidor. Não mudei para Content-Length aqui porque é
+  // infraestrutura compartilhada por toda a suíte (E2E, peso do herói) e a
+  // mudança está fora do escopo daquela tarefa.
   res.writeHead(status, { 'content-type': TIPOS[extname(alvo)] ?? 'application/octet-stream' });
   createReadStream(alvo).pipe(res);
 }).listen(PORTA, () => {
