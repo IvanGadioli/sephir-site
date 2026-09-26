@@ -34,7 +34,14 @@ describe('Seta', () => {
     expect(com).toContain('seta__regua');
   });
 
-  it('garante alvo de toque de 44px', () => {
+  // Renomeado na correção I8. O nome anterior era "garante alvo de toque de
+  // 44px", e o corpo afirma que uma classe existe — `renderToStaticMarkup` não
+  // vê CSS, então este teste nunca pôde falar sobre pixel. O valor mora em
+  // `estilos/base.css` (`.seta { min-height: 44px }`) e quem o mede agora é
+  // `tests/e2e/acessibilidade.spec.ts`, com `boundingBox` nos dois viewports.
+  // O teste continua valendo pelo que ele de fato garante: sem a classe, o
+  // seletor do CSS não alcança nada e o alvo de toque desaparece em silêncio.
+  it('carrega a classe .seta, que é onde o alvo de toque de 44px é aplicado', () => {
     const html = renderToStaticMarkup(<Seta href="/pt/">voltar</Seta>);
     expect(html).toContain('class="seta"');
   });

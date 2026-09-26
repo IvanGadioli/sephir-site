@@ -93,6 +93,44 @@ test('o alvo de toque do menu móvel tem 44px', async ({ page }) => {
   expect(caixa.height).toBeGreaterThanOrEqual(44);
 });
 
+// O alvo de toque da `Seta` mora em `estilos/base.css` (`.seta { min-height:
+// 44px }`) e não tinha asserção que pudesse falhar (achado I8). O unitário
+// prometia 44 px no nome e afirmava que a classe existe no corpo —
+// `renderToStaticMarkup` não vê CSS, então apagar o `min-height` deixava a
+// suíte inteira verde. Pior: o ledger fechou a T9 dizendo que "a T17 vai medir
+// a 390 px", e a T17 só mediu `.menu-movel > summary`.
+//
+// Aqui a caixa é medida de verdade, em toda `.seta` visível, nas cinco rotas e
+// nos dois viewports — as rotas derivadas de `lib/rotas.ts` como no resto do
+// arquivo, para que rota nova entre sozinha.
+const ALVO_DE_TOQUE_PX = 44;
+
+for (const rota of ROTAS) {
+  test(`toda .seta visível em ${rota} tem alvo de toque de 44px`, async ({ page }) => {
+    await page.goto(rota, { waitUntil: 'load' });
+    const setas = page.locator('.seta');
+    const total = await setas.count();
+    const medidas: string[] = [];
+    for (let i = 0; i < total; i++) {
+      const seta = setas.nth(i);
+      // `.apenas-movel` esconde uma das setas acima de 768px: sem caixa não há
+      // alvo de toque, e isso é o comportamento certo, não uma falha.
+      if (!(await seta.isVisible())) continue;
+      const caixa = await seta.boundingBox();
+      expect(caixa, await seta.innerText()).not.toBeNull();
+      medidas.push(`${await seta.innerText()} ${caixa?.width}x${caixa?.height}`);
+      expect(caixa?.height, await seta.innerText()).toBeGreaterThanOrEqual(ALVO_DE_TOQUE_PX);
+    }
+    // Sem isto o teste passaria vazio numa rota que perdesse todas as setas, e
+    // um teste que não pode falhar é justamente o defeito que I8 nomeou. As
+    // rotas de conteúdo interno (`/pt/sobre/`, `/pt/como-e-feito/`) não têm
+    // `.seta` por desenho, então a exigência é por rota que tenha alguma.
+    if (rota === '/pt/' || rota === '/rota-que-nao-existe/') {
+      expect(medidas.length, `${rota}: ${medidas.join(' · ')}`).toBeGreaterThan(0);
+    }
+  });
+}
+
 test('o menu móvel abre e fecha sem JavaScript', async ({ page }) => {
   await page.goto('/pt/');
   const detalhes = page.locator('.menu-movel');
