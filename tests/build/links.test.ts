@@ -1,17 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-
-function listarArquivos(raiz: string, filtro: (n: string) => boolean): string[] {
-  const achados: string[] = [];
-  for (const entrada of readdirSync(raiz)) {
-    const caminho = join(raiz, entrada);
-    if (statSync(caminho).isDirectory()) achados.push(...listarArquivos(caminho, filtro));
-    else if (filtro(entrada)) achados.push(relative('out', caminho));
-  }
-  return achados;
-}
+import { listar } from '../support/arvore.mjs';
 
 // Um href interno resolve para: o próprio arquivo (se termina em extensão), ou
 // <rota>/index.html (se termina em barra). Fragmento e query são descartados
@@ -29,7 +20,7 @@ describe('a integridade dos links internos', () => {
 
   beforeAll(() => {
     execFileSync('npm', ['run', 'build'], { stdio: 'inherit' });
-    paginas = listarArquivos('out', (n) => n.endsWith('.html'));
+    paginas = listar('out', (n) => n.endsWith('.html'));
   }, 300_000);
 
   it('todo href interno aponta para um arquivo que existe', () => {

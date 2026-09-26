@@ -1,16 +1,12 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { listarCaminhos } from '../support/arvore.mjs';
 
-function listarFontes(raiz: string): string[] {
-  const achados: string[] = [];
-  for (const entrada of readdirSync(raiz)) {
-    const caminho = join(raiz, entrada);
-    if (statSync(caminho).isDirectory()) achados.push(...listarFontes(caminho));
-    else if (/\.(ts|tsx)$/.test(entrada)) achados.push(caminho);
-  }
-  return achados;
-}
+// `listarCaminhos`, e não `listar`: este arquivo abre cada fonte e compara o
+// caminho contra `componentes/heroi`, então precisa do caminho a partir do cwd,
+// não do rótulo relativo à raiz varrida.
+const listarFontes = (raiz: string) => listarCaminhos(raiz, (n) => /\.(ts|tsx)$/.test(n));
 
 // Diretiva: ancorada em início de linha. Prosa que mencione a diretiva não casa.
 const DIRETIVA_CLIENTE = /^\s*(['"])use client\1/m;

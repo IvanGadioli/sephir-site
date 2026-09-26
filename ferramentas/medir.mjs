@@ -135,6 +135,11 @@ export async function medirHeroiPorNavegador(urlBase, raiz) {
   return { total, detalhe, home: [...home].sort(), sobre: [...sobre].sort(), exclusivos };
 }
 
+// Segunda das DUAS cópias deste caminhador, e a duplicação é deliberada: as
+// outras três viraram `tests/support/arvore.mjs` na correção I7, e este arquivo
+// é ferramenta de produção — importar de `tests/` inverteria a dependência. Se
+// mexer na armadilha aqui, mexa lá também.
+//
 // `base` fixa a raiz original através da recursão: sem isso, a chamada
 // recursiva `listar(caminho, sufixo)` promove o subdiretório a `raiz`, e
 // `relative(raiz, caminho)` devolve só o nome do arquivo — perdendo o prefixo
