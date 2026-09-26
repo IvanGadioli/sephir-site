@@ -388,7 +388,9 @@ Quatro camadas. Vermelho primeiro, sempre.
 
 **3. Build, sobre `out/`** — depois de `next build`:
 
-- a árvore é exatamente os cinco arquivos da seção 2, nem mais nem menos;
+- os **HTML** da árvore são exatamente os cinco arquivos da seção 2, nem mais
+  nem menos — e nenhum arquivo de `out/` tem extensão fora de
+  `.css .html .js .txt .webp .woff2`;
 - todo `href` interno resolve para arquivo existente;
 - `'use client'` aparece **só** dentro de `componentes/heroi/` — varredura na
   árvore de fontes, não no `out/`.

@@ -251,7 +251,7 @@ decidível.
 
 | termo da hipótese | veredito |
 |---|---|
-| cinco rotas | **cumprido** — `/`, `/pt/`, `/pt/sobre/`, `/pt/como-e-feito/`, `404.html`, travadas por igualdade estrita |
+| cinco rotas | **cumprido** — `/`, `/pt/`, `/pt/sobre/`, `/pt/como-e-feito/`, `404.html`, travadas por igualdade estrita de HTML, mais uma lista fechada de extensões permitidas em `out/` (correção I6: a igualdade estrita sozinha só via HTML, e "nem mais nem menos" valia sobre os HTML da árvore, não sobre a árvore) |
 | LCP não pior que o `main` | **cumprido** — melhor sob os dois instrumentos |
 | CLS não pior que o `main` e ≤ 0,02 | **cumprido** — 0 nas 20 execuções |
 | herói WebGPU dentro do limiar da spec §8 | **cumprido** — 68 233 B contra 97 280 B, 29 047 B de folga |
