@@ -8,6 +8,7 @@ export const NOISE_VOLUME_SIZE = 64;
 const FORMAT = "r8unorm";
 const SEED = 13;
 const fr = Math.fround;
+/** @param {number} value @returns {number} */
 const fract = (value) => fr(value - Math.floor(value));
 const K0 = fr(0.1031);
 const K1 = fr(0.103);
@@ -28,11 +29,15 @@ function hash31(x, y, z) {
   return fract(fr(fr(qx + qy) * qz));
 }
 
-/** Use signed coordinates so the disk's angular axes match the original analytic noise. */
+/**
+ * Use signed coordinates so the disk's angular axes match the original analytic noise.
+ * @param {number} index @param {number} size @returns {number}
+ */
 function latticeCoord(index, size) {
   return index < size / 2 ? index : index - size;
 }
 
+/** @param {number} size @param {number} seed @returns {Uint8Array} */
 function buildNoiseVolume(size, seed) {
   const data = new Uint8Array(size * size * size);
   const offset = seed * 1024;
@@ -52,8 +57,10 @@ function buildNoiseVolume(size, seed) {
   return data;
 }
 
+/** @type {Map<string, Uint8Array>} */
 const cache = new Map();
 
+/** @param {number} size @param {number} seed @returns {Uint8Array} */
 function noiseVolumeData(size, seed) {
   const key = `${size}:${seed}`;
   let data = cache.get(key);

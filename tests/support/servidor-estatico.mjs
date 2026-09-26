@@ -9,6 +9,7 @@ import { extname, join, normalize } from 'node:path';
 const RAIZ = new URL(`../../${process.argv[2] ?? 'out'}/`, import.meta.url).pathname;
 const PORTA = Number(process.argv[3] ?? 4173);
 
+/** @type {Record<string, string>} */
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -22,8 +23,14 @@ const TIPOS = {
 
 // Resolve como um host real: /rota/ → /rota/index.html, e qualquer coisa que
 // não casa cai no 404.html — que é exatamente o que o Cloudflare Pages faz.
+/** @param {string | undefined} urlBruta */
 function resolver(urlBruta) {
-  const caminho = decodeURIComponent((urlBruta ?? '/').split('?')[0]);
+  // O segundo `?? '/'` é do `noUncheckedIndexedAccess`, que o `checkJs` da
+  // correção I5 finalmente passou a aplicar a este arquivo: `split('?')[0]` é
+  // `string | undefined` para o compilador. Em execução nunca é undefined —
+  // `String.split` sempre devolve ao menos um elemento —, mas o compilador não
+  // sabe disso e o default certo para uma URL vazia é a raiz de todo modo.
+  const caminho = decodeURIComponent((urlBruta ?? '/').split('?')[0] ?? '/');
   const seguro = normalize(caminho).replace(/^(\.\.[/\\])+/, '');
   let alvo = join(RAIZ, seguro);
   if (existsSync(alvo) && statSync(alvo).isDirectory()) alvo = join(alvo, 'index.html');

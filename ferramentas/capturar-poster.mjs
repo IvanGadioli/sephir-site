@@ -55,8 +55,14 @@ try {
   await page.waitForTimeout(1000);
 
   const { dataUrl, width, height } = await page.evaluate(() => {
+    // `querySelector` devolve `Element`, que não tem `toDataURL` — foi o que o
+    // `checkJs` da correção I5 apontou aqui. O `instanceof` não é cerimônia:
+    // se algum dia `.heroi__canvas` deixar de ser um <canvas>, a mensagem
+    // abaixo diz isso em vez de estourar em `c.toDataURL is not a function`.
     const c = document.querySelector('.heroi__canvas');
-    if (!c) throw new Error('`.heroi__canvas` ausente do DOM — WebGPU indisponível ou prefers-reduced-motion ativo');
+    if (!(c instanceof HTMLCanvasElement)) {
+      throw new Error('`.heroi__canvas` ausente ou não é <canvas> — WebGPU indisponível ou prefers-reduced-motion ativo');
+    }
     return { dataUrl: c.toDataURL('image/png'), width: c.width, height: c.height };
   });
   console.log('canvas backing store:', width, 'x', height);

@@ -1,6 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { colors, fonts } from '../lib/marca.ts';
 
+/** @param {string} nome @returns {string} */
 const kebab = (nome) => nome.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
 export function gerarTokens() {

@@ -20,6 +20,7 @@
       "node"
     ],
     "allowJs": true,
+    "checkJs": true,
     "incremental": true,
     "jsx": "react-jsx",
     "plugins": [

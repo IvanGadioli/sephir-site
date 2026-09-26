@@ -4,12 +4,17 @@ import { join, relative } from 'node:path';
 
 // brotli, e não gzip: é o que o Cloudflare Pages entrega ao visitante. Medir
 // gzip seria medir um número que ninguém baixa.
+/** @param {string} caminho @returns {number} bytes depois do brotli -q 11 */
 export function brotli(caminho) {
   return execFileSync('brotli', ['-q', '11', '-c', caminho], {
     maxBuffer: 64 * 1024 * 1024,
   }).length;
 }
 
+/**
+ * @param {string} raiz
+ * @param {string} rota caminho do HTML relativo a `raiz`
+ */
 export function medirRota(raiz, rota) {
   const documento = join(raiz, rota);
   if (!existsSync(documento)) throw new Error(`ausente: ${documento}`);
@@ -33,6 +38,7 @@ export function medirRota(raiz, rota) {
 // O chunk do herói é o que NÃO aparece em toda rota: as rotas sem herói
 // carregam o piso de framework, a home carrega o piso mais o herói. A
 // diferença é o custo real do canvas.
+/** @param {string} raiz */
 export function medirHeroi(raiz) {
   const home = medirRota(raiz, 'pt/index.html');
   const sobre = medirRota(raiz, 'pt/sobre/index.html');
@@ -43,7 +49,9 @@ export function medirHeroi(raiz) {
 // direto o brotli dos chunks que aparecem em pt/index.html e NÃO aparecem em
 // pt/sobre/index.html. Se o Next puser o canvas num chunk compartilhado por
 // toda rota, nem esta função acha nada exclusivo — e isso também é achado.
+/** @param {string} raiz */
 export function medirHeroiPorChunk(raiz) {
+  /** @param {string} rota */
   const refs = (rota) => {
     const html = readFileSync(join(raiz, rota), 'utf8');
     return new Set([...html.matchAll(/\/_next\/static\/[^"']+\.(?:js|css)/g)].map((m) => m[0]));
@@ -82,9 +90,11 @@ export function medirHeroiPorChunk(raiz) {
 // sobe nem derruba servidor, só navega. Import do Playwright é dinâmico e só
 // acontece dentro da função: as outras três funções e o CLI continuam sem
 // depender dele.
+/** @param {string} urlBase @param {string} raiz */
 export async function medirHeroiPorNavegador(urlBase, raiz) {
   const { chromium } = await import('@playwright/test');
 
+  /** @param {string} rota @returns {Promise<Set<string>>} */
   const requisitados = async (rota) => {
     const browser = await chromium.launch({ executablePath: '/usr/bin/chromium' });
     try {
@@ -113,6 +123,7 @@ export async function medirHeroiPorNavegador(urlBase, raiz) {
   const exclusivos = [...home].filter((url) => !sobre.has(url)).sort();
 
   let total = 0;
+  /** @type {Record<string, number>} */
   const detalhe = {};
   for (const url of exclusivos) {
     const arquivo = join(raiz, url.replace(/^\//, ''));
@@ -131,7 +142,14 @@ export async function medirHeroiPorNavegador(urlBase, raiz) {
 // vira `index.html`). Achado na auto-revisão desta tarefa: o CLI chegou a
 // listar `index.html` quatro vezes, todas medindo `out/index.html` de novo,
 // porque o rótulo errado era resolvido de volta contra a raiz de topo.
+/**
+ * @param {string} raiz
+ * @param {string} sufixo
+ * @param {string} [base]
+ * @returns {string[]}
+ */
 function listar(raiz, sufixo, base = raiz) {
+  /** @type {string[]} */
   const achados = [];
   for (const entrada of readdirSync(raiz)) {
     const caminho = join(raiz, entrada);
