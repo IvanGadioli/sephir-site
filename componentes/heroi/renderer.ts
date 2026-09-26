@@ -22,6 +22,19 @@
 // Divergências de API já corrigidas na porta (ver `pipeline.ts` e o report
 // da Tarefa 18): `@vgpu/wgsl/wgsl-types` (não `@vgpu/wgsl/types`) e
 // `quadro.pass(alvo, efeito)` (não `efeito.draw(quadro, alvo)`).
+//
+// Tarefa 20: degradação por saúde de quadro (`frame-health.ts`). A superfície
+// é criada com `autoResize: false` — deixá-la ligada relê `devicePixelRatio`
+// a cada quadro e sobrescreveria o DPR fixado pela degradação; é o
+// anti-padrão que o guia da vgpu nomeia. O DPR agora é estado nosso
+// (`dprAtual`), começa em `clamp(devicePixelRatio, 1, 2)` e só muda por
+// decisão da degradação — nunca por leitura do navegador depois do primeiro
+// quadro. Também resolvido aqui, por ser o mesmo ciclo de vida do laço: o
+// `matchMedia('(prefers-reduced-motion: reduce)')` agora é reavaliado depois
+// da montagem (não só uma vez, como o `podeTentar` do `Canvas.tsx`, que
+// continua correto para a decisão inicial) — sem isso o `requestAnimationFrame`
+// seguia rodando atrás do `display: none` quando a preferência mudava com a
+// página já aberta.
 import type { Frame, Gpu, Surface } from 'vgpu';
 
 import {
@@ -37,6 +50,7 @@ import {
   type Effects,
   type Targets,
 } from './pipeline.ts';
+import { criarMonitorDeQuadro } from './frame-health.ts';
 import { defaultHeroSettings } from './settings.ts';
 
 type ApiVgpu = typeof import('vgpu');
@@ -49,10 +63,23 @@ const TARGET_FPS = 30;
 const FRAME_PACING_EPSILON_MS = 2;
 const MIN_FRAME_INTERVAL_MS = 1000 / TARGET_FPS - FRAME_PACING_EPSILON_MS;
 const CONSULTA_MOVEL = '(max-width: 767px)';
+const CONSULTA_MOVIMENTO_REDUZIDO = '(prefers-reduced-motion: reduce)';
+// DPR mínimo e máximo que a superfície aceita antes de qualquer degradação —
+// mesmo grampo que já existia para `escalaBloom`, agora também governando o
+// DPR real da superfície.
+const DPR_MINIMO = 1;
+const DPR_MAXIMO = 2;
 
 type TamanhoRender = { width: number; height: number };
 
-export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
+export function criarRenderer({
+  canvas,
+  aoDesligar,
+}: {
+  canvas: HTMLCanvasElement;
+  /** Chamado quando a degradação persiste mesmo em DPR 1: o herói desliga e o pôster assume. */
+  aoDesligar?: () => void;
+}) {
   const settings = defaultHeroSettings();
   const layoutDesktop = {
     centerX: settings.centerX,
@@ -72,12 +99,20 @@ export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
     );
   };
   aplicarLayoutResponsivo();
-  const escalaBloom =
-    Math.min(Math.max(typeof window === 'undefined' ? 1 : window.devicePixelRatio, 1), 2) / 2;
+  // DPR inicial: o mesmo grampo que a Tarefa 19 já aplicava só ao bloom passa
+  // a governar também a resolução real da superfície. `dprAtual` é estado
+  // nosso — só muda por `aoDegradarPrimeiraVez`, nunca relido do navegador
+  // depois deste ponto.
+  let dprAtual = Math.min(
+    Math.max(typeof window === 'undefined' ? 1 : window.devicePixelRatio, DPR_MINIMO),
+    DPR_MAXIMO
+  );
+  const escalaBloom = dprAtual / 2;
   settings.bloom.radius *= escalaBloom;
   settings.bloom.strength *= escalaBloom;
 
   let descartado = false;
+  let desligado = false;
 
   let api: ApiVgpu | undefined;
   let gpu: Gpu | undefined;
@@ -89,6 +124,17 @@ export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
   let intersectionObserver: IntersectionObserver | undefined;
   let documentoVisivel = typeof document === 'undefined' ? true : !document.hidden;
   let canvasIntersecta = true;
+
+  const consultaMovimentoReduzido =
+    typeof window === 'undefined' ? undefined : window.matchMedia(CONSULTA_MOVIMENTO_REDUZIDO);
+  let movimentoReduzido = consultaMovimentoReduzido?.matches ?? false;
+
+  // Monitor de saúde de quadro. Troca de instância uma vez, na primeira
+  // degradação: o `jaDegradou` de cada `criarMonitorDeQuadro` é de mão única,
+  // então depois da queda de DPR o monitor original nunca mais dispara — o
+  // `monitorAtivo` passa a apontar para um segundo monitor, que decide o
+  // desligamento se a queda de DPR não bastar.
+  let monitorAtivo = criarMonitorDeQuadro({ aoDegradar: aoDegradarPrimeiraVez });
 
   let iniciado = false;
   let tempoAnimacao = 0;
@@ -122,10 +168,20 @@ export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
     documentoVisivel = !document.hidden;
     reconciliarLaco();
   };
+  // Item carregado da Tarefa 18: `podeTentar()` do Canvas.tsx só decide a
+  // montagem inicial e está correto — o que faltava era reavaliar depois. Sem
+  // isto, o `requestAnimationFrame` seguia rodando atrás do `display: none`
+  // quando o visitante ligava a preferência com a página já aberta.
+  const aoMudarMovimentoReduzido = () => {
+    movimentoReduzido = consultaMovimentoReduzido?.matches ?? false;
+    reconciliarLaco();
+  };
+  consultaMovimentoReduzido?.addEventListener('change', aoMudarMovimentoReduzido);
 
   function reconciliarLaco(): void {
     if (!iniciado || !gpu || !api) return;
-    const deveRodar = !descartado && documentoVisivel && canvasIntersecta;
+    const deveRodar =
+      !descartado && !desligado && documentoVisivel && canvasIntersecta && !movimentoReduzido;
     if (deveRodar === Boolean(laco)) return;
     if (deveRodar) {
       ultimoQuadroEm = undefined;
@@ -142,11 +198,25 @@ export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
     let ultimoApresentadoEm: number | undefined;
     const tick = (timestamp: number): void => {
       if (parado) return;
-      if (
-        ultimoApresentadoEm === undefined ||
-        timestamp - ultimoApresentadoEm >= MIN_FRAME_INTERVAL_MS
-      ) {
+      const anterior = ultimoApresentadoEm;
+      if (anterior === undefined || timestamp - anterior >= MIN_FRAME_INTERVAL_MS) {
         ultimoApresentadoEm = timestamp;
+        // Quadro APRESENTADO, não a taxa crua de rAF: só chega aqui quando o
+        // pacing deixou passar, então `renderizado` é sempre `true` neste
+        // ponto — o monitor descarta o resto sozinho (`ativo`, o corte de
+        // 250 ms).
+        monitorAtivo.registrar({
+          deltaMs: anterior === undefined ? 1000 / TARGET_FPS : timestamp - anterior,
+          ativo: documentoVisivel && canvasIntersecta,
+          renderizado: true,
+          fpsAlvo: TARGET_FPS,
+        });
+        // `registrar` acima pode disparar `aoDegradarSegundaVez` → `desligar()`
+        // de forma síncrona, que descarta o gpu. `parado` já viraria `true`
+        // (via `laco.stop()` dentro de `descartarInterno`), mas só é checado
+        // no topo do próximo `tick` — sem reler aqui, este quadro ainda
+        // chamaria `vgpu.frame` num gpu já descartado.
+        if (parado) return;
         try {
           vgpu.frame(gpuAtivo, renderizarQuadro);
         } catch (error) {
@@ -209,11 +279,19 @@ export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
     tamanhoPendente = undefined;
     if (descartado || !tamanho || !gpu || !api || !effects || !targets || !alvo) return;
     try {
+      // `dprAtual` é lido aqui, não no agendamento: uma degradação que muda o
+      // DPR entre `redimensionar()` e este `requestAnimationFrame` já se
+      // aplica neste resize, sem precisar de uma segunda rodada.
+      const tamanhoPixels: readonly [number, number] = [
+        Math.max(1, Math.round(tamanho.width * dprAtual)),
+        Math.max(1, Math.round(tamanho.height * dprAtual)),
+      ];
+      // A superfície está com `autoResize: false` (Tarefa 20): ninguém mais a
+      // redimensiona sozinha, então o resize dela entra aqui, ao lado do dos
+      // alvos internos — os dois sempre em sincronia com o mesmo `dprAtual`.
+      alvo.resize(tamanhoPixels);
       const targetsAnteriores = targets;
-      const proximosTargets = createTargets(api, gpu, [
-        Math.max(1, Math.round(tamanho.width)),
-        Math.max(1, Math.round(tamanho.height)),
-      ]);
+      const proximosTargets = createTargets(api, gpu, tamanhoPixels);
       try {
         setBindings(effects, proximosTargets);
         setPostUniforms(effects, proximosTargets, settings);
@@ -237,6 +315,34 @@ export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
     redimensionar({ width: canvas.clientWidth, height: canvas.clientHeight });
   };
 
+  // Tarefa 20, passo 5.3: no `aoDegradar` do monitor principal, fixa o DPR em
+  // 1, redimensiona a superfície e os alvos, e reinicia o monitor — mas desta
+  // vez trocando `monitorAtivo` para uma instância nova, com `aoDegradar`
+  // apontando para o desligamento. `monitor.reiniciar()` não bastaria sozinho
+  // aqui: o `jaDegradou` do monitor original é de mão única por desenho (ver
+  // `frame-health.ts`), então ele nunca mais chamaria `aoDegradar` — é por
+  // isso que a política pede um segundo monitor, não o mesmo reiniciado.
+  function aoDegradarPrimeiraVez(_motivo: string): void {
+    if (descartado || desligado) return;
+    dprAtual = DPR_MINIMO;
+    medir();
+    monitorAtivo = criarMonitorDeQuadro({ aoDegradar: aoDegradarSegundaVez });
+  }
+
+  // Passo 5.4: se o laço ainda não sustentar mesmo em DPR 1, desliga — o
+  // Canvas volta `pintando` para `false` e o CSS devolve `opacity: 0`; o
+  // pôster, que nunca saiu do DOM, permanece.
+  function aoDegradarSegundaVez(_motivo: string): void {
+    desligar();
+  }
+
+  function desligar(): void {
+    if (desligado || descartado) return;
+    desligado = true;
+    aoDesligar?.();
+    descartarInterno();
+  }
+
   const descartarInterno = () => {
     if (descartado) return;
     descartado = true;
@@ -246,6 +352,7 @@ export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
     intersectionObserver?.disconnect();
     if (typeof window !== 'undefined') {
       consultaMovel?.removeEventListener('change', aoMudarLayout);
+      consultaMovimentoReduzido?.removeEventListener('change', aoMudarMovimentoReduzido);
       window.removeEventListener('pointermove', aoMoverPonteiro);
       window.removeEventListener('pointerout', aoSairPonteiro);
       window.removeEventListener('blur', recentrarPonteiro);
@@ -273,7 +380,12 @@ export function criarRenderer({ canvas }: { canvas: HTMLCanvasElement }) {
     }
     gpu = proximoGpu;
     api = vgpu;
-    alvo = vgpu.surface(gpu, canvas, { dpr: 1 });
+    // `autoResize: false` (Tarefa 20): a superfície não relê
+    // `devicePixelRatio` a cada quadro por conta própria — isso sobrescreveria
+    // o DPR fixado pela degradação, o anti-padrão que o guia da vgpu nomeia.
+    // `dpr: dprAtual` ainda dá a ela o tamanho inicial correto; os resizes
+    // seguintes (inclusive o da degradação) passam por `aplicarResize`.
+    alvo = vgpu.surface(gpu, canvas, { dpr: dprAtual, autoResize: false });
     effects = createEffects(vgpu, gpu);
     targets = createTargets(vgpu, gpu, alvo.size);
     setBindings(effects, targets);

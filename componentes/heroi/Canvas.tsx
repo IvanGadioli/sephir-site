@@ -35,7 +35,17 @@ export function Canvas() {
     if (canvas === null) return;
 
     let cancelado = false;
-    const renderer = criarRenderer({ canvas });
+    // `aoDesligar`: a Tarefa 20 (degradação por saúde de quadro) chama isto
+    // quando o herói não sustenta nem em DPR 1 — o renderer já se descartou
+    // sozinho (`descartarInterno`, dentro de `desligar()`); aqui só falta
+    // devolver `pintando` a `false`, para o CSS voltar a esconder o <canvas>
+    // (`opacity: 0`) e o pôster, que nunca saiu do DOM, reaparecer.
+    const renderer = criarRenderer({
+      canvas,
+      aoDesligar: () => {
+        if (!cancelado) setPintando(false);
+      },
+    });
     void renderer.pronto
       .then(() => {
         if (!cancelado) setPintando(true);
