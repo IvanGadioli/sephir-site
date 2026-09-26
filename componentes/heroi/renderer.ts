@@ -11,8 +11,12 @@
 // - o `matchMedia('(max-width: 767px)')` que troca o enquadramento para
 //   `{ centerX: 0, centerY: 0, cameraRoll: 0, mouseYaw: 0, centerFade: 1 }`;
 // - o ajuste de `bloom.radius`/`bloom.strength` por `devicePixelRatio`;
-// - o `ResizeObserver`, o `IntersectionObserver` e o `document.hidden`, que
-//   param o laço quando o herói não está à vista (bateria em aba de fundo);
+// - o `IntersectionObserver` e o `document.hidden`, que de fato param o laço
+//   (`laco.stop()`, via `reconciliarLaco()`) quando o herói não está à vista
+//   ou a aba está em segundo plano — o que evita queimar bateria numa aba de
+//   fundo. O `ResizeObserver` é diferente: ele só remede o canvas
+//   (`aplicarResize()`), não pausa nada — não remover a checagem achando-a
+//   redundante com os outros dois;
 // - o pacing manual do laço de quadro, com uma mudança: `TARGET_FPS = 30`,
 //   não 60 — política da spec §5, decidida antes de qualquer medição.
 // Divergências de API já corrigidas na porta (ver `pipeline.ts` e o report

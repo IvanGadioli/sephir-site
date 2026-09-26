@@ -14,7 +14,7 @@ import {
 } from "./noise-volume.mjs";
 import refineWgsl from "./refine.wgsl";
 import shadeWgsl from "./shade.wgsl";
-import type { HeroSettings } from "./settings";
+import type { HeroSettings } from "./settings.ts";
 
 export type VgpuApi = typeof import("vgpu");
 type Output = Surface | Target;
