@@ -7,3 +7,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Alcance
+
+- Abra o agente aqui ou em `../sephir-site-workspace/` — nunca na pasta mestre. Escopo, spec e ADR moram lá.
+- Fora deste repositório, leia só o par (`../sephir-site-workspace/`) e a marca (`../../estudio/sephir-brand/`).
+- Tudo aqui é **N0**. Nunca ler `../../estudio/fapdf/` nem `../../estudio/documentos-societarios/` (N3) — negado em `.claude/settings.json` (`../../decisoes/adr-s004`).
+- Memória automática de agente: `../sephir-site-workspace/_memoria/sephir-site/`.
