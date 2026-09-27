@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(~/Documents/sephir/estudio/fapdf/**)",
+      "Edit(~/Documents/sephir/estudio/fapdf/**)",
+      "Read(~/Documents/sephir/estudio/documentos-societarios/**)",
+      "Edit(~/Documents/sephir/estudio/documentos-societarios/**)"
+    ]
+  }
+}
