@@ -1,7 +1,7 @@
 /**
  * lib/marca.ts — cópia carimbada da identidade oficial.
  *
- * Origem: ~/Documents/sephir/sephir-brand/00-identidade/tokens/theme.ts
+ * Origem: ~/Documents/sephir/estudio/sephir-brand/00-identidade/tokens/theme.ts
  * Carimbada em: 2026-09-24
  *
  * Fonte única de cor e fonte deste repositório. Não editar valor aqui sem
