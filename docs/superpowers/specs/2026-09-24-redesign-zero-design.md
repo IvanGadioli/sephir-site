@@ -237,7 +237,41 @@ Os dois vivem no mesmo chunk e contam como **um** ponto de entrada. A `vgpu`
 entra mais fundo ainda, por `await import("vgpu")` dentro do renderer, como no
 exemplo — não está no chunk de entrada.
 
-`heroi.webp` continua sendo o elemento de LCP e é também o fallback.
+~~`heroi.webp` continua sendo o elemento de LCP~~ e é também o fallback.
+
+> **Corrigido em 2026-09-26, achado pela revisão final (I3).** A primeira metade
+> desta frase é **falsa nesta branch**, e nunca foi medida aqui — foi herdada do
+> `main`, onde é verdadeira. O elemento de LCP do `zero` é o **`<h1>`**, em todas
+> as execuções medidas, em Lighthouse (perfil móvel) e em `PerformanceObserver`
+> direto, a 1920 px e a 390 px:
+>
+> ```
+> zero  LCPel: body > div.heroi > div.heroi__texto > h1       (6/6 execuções)
+> main  LCPel: body > header.heroi > img.heroi__fundo         (6/6 execuções)
+> ```
+>
+> **Mecanismo, estabelecido por experimento e não por leitura:** a causa é
+> `.heroi { min-height: 100svh }` (`estilos/base.css`). O Chromium trata uma
+> imagem que cobre o viewport inteiro como fundo de página e a tira da disputa de
+> LCP. Servindo a mesma árvore com `70svh` no lugar de `100svh`, o pôster **volta
+> a ser** o elemento de LCP; remover os véus ou acrescentar
+> `width`/`height`/`fetchpriority="high"` ao `<img>` não muda nada. No `main` a
+> mesma imagem contava porque lá o `<header class="heroi">` tinha altura de
+> conteúdo.
+>
+> **`100svh` é o design aprovado e fica.** Um LCP de texto a ~1,9 s é melhor que
+> um de imagem a ~2,1 s, e é o que esta branch entrega. O que muda é o que se
+> pode afirmar: o pôster **não entra no caminho crítico de LCP desta página** — ele
+> continua sendo o fallback do herói (as quatro condições acima), e o teto de
+> 60 kB continua valendo como higiene de peso, não como orçamento de LCP.
+>
+> E o que os quatro números do relatório não diziam: o LCP desta branch é
+> **99–100% render delay** (TTFB 8–12 ms, load delay 0, load time 0, render delay
+> 1 864–1 911 ms de 1 873–1 920 ms). É governado por bloqueio de main thread, não
+> por byte de imagem. No `main` a composição é o oposto — load delay 32% + load
+> time 63%, render delay 4–8% —, o que é a mesma coisa dita de outro jeito: os
+> dois lados medem tipos de elemento diferentes, e por isso medem causas
+> diferentes.
 
 ### Quando o canvas NÃO monta
 

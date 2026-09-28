@@ -12,16 +12,22 @@ describe('o pôster do herói', () => {
     expect(() => statSync('public/poster/heroi.webp')).not.toThrow();
   });
 
-  it('cabe no orçamento do LCP: até 60 kB', () => {
+  it('cabe no orçamento de peso: até 60 kB', () => {
     // O pôster atual tem 35 372 B. O gerado pode crescer — um buraco negro com
-    // disco tem mais detalhe que uma nebulosa difusa, então pode crescer — mas
-    // não sem limite: ele é o elemento de LCP e entra no caminho crítico.
+    // disco tem mais detalhe que uma nebulosa difusa — mas não sem limite: ele é
+    // o fallback do herói e é baixado por todo visitante, com ou sem WebGPU.
+    //
+    // O teto NÃO é orçamento de LCP. A revisão final (I3) mediu que o elemento
+    // de LCP desta branch é o <h1>, não o pôster: `.heroi { min-height: 100svh }`
+    // faz o Chromium tratar a imagem como fundo de página e a tira da disputa.
+    // O teto continua valendo como higiene de peso; a razão escrita antes não
+    // se sustentava.
     expect(statSync('public/poster/heroi.webp').size).toBeLessThan(61_440);
   });
 
   it('tem 1280×726, a largura do pôster anterior', () => {
-    // Largura travada por decisão do coordenador: o pôster é o elemento de LCP,
-    // e servir imagem maior inflaria o número que a Tarefa 23 compara contra o main.
+    // Largura travada por decisão do coordenador, para paridade com o pôster do
+    // main. Não é por causa do LCP — ver o comentário do teto de peso acima.
     expect(medir('%wx%h')).toBe('1280x726');
   });
 

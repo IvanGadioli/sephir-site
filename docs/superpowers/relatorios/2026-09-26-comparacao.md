@@ -106,7 +106,69 @@ não depende de qual das duas comparações se escolhe.
 Contexto que corta contra a intuição: **o lado novo é mais pesado no fio e
 ainda assim pinta mais rápido.** Transferido sob brotli: main 217 303 B, zero
 310 910 B (+93 607 B, +43%). O herói entra por `import()` dinâmico depois do
-`load`, fora do caminho crítico do LCP, e o elemento de LCP é o pôster.
+`load`, fora do caminho crítico do LCP.
+
+> **Corrigido em 2026-09-26, achado pela revisão final (I3).** A frase acima
+> terminava com "e o elemento de LCP é o pôster". **Isso é falso nesta branch, e
+> a razão real é melhor para o `zero` e pior para a comparação.**
+>
+> O elemento de LCP do `zero` é o **`<h1>`**; o do `main` é a **`<img>`**. Medido
+> pelo mesmo instrumento, em dez execuções (cinco por árvore) nesta sessão, sem
+> uma exceção:
+>
+> ```
+> zero  LCPel: body > div.heroi > div.heroi__texto > h1     5/5
+> main  LCPel: body > header.heroi > img.heroi__fundo       5/5
+> ```
+>
+> **Mecanismo, estabelecido por experimento.** A causa é `.heroi { min-height:
+> 100svh }`: o Chromium trata imagem que cobre o viewport inteiro como fundo de
+> página e a tira da disputa de LCP. Servindo a mesma árvore com `70svh`, o pôster
+> volta a ser o elemento de LCP. Remover os véus ou acrescentar
+> `width`/`height`/`fetchpriority="high"` não muda nada. No `main` a mesma imagem
+> contava porque lá o `<header class="heroi">` tinha altura de conteúdo.
+>
+> **Consequência para o veredito:** o `zero` não espera 35 kB de imagem porque o
+> que ele mede não é a imagem. O limiar "não pior que o `main`" passa, os números
+> são honestos, e **os dois lados medem tipos de elemento diferentes** — o que está
+> agora registrado na tabela do veredito. `100svh` é o design aprovado e fica: um
+> LCP de texto a ~1,8 s é melhor que um de imagem a ~2,0 s.
+>
+> E o que os quatro números não diziam: o LCP desta branch é **~99% render
+> delay** — governado por bloqueio de main thread, não por byte de imagem. O que
+> leva ao número seguinte, que eu havia declarado como não medido.
+
+### TBT — medido agora, e reprova nas duas árvores
+
+O `W4` tem três métricas; esta rodada mediu duas e declarou a terceira como
+dívida. **Medir custava o mesmo comando.** Medido, mediana de cinco, perfil
+móvel, mesmo instrumento e mesmos dois servidores:
+
+| árvore | TBT (5 execuções, ms) | mediana | teto `W4` | veredito |
+|---|---|---|---|---|
+| `main` | 234 · 237 · 282 · 389 · 407 | **282 ms** | 200 ms | **estoura 1,4×** |
+| `zero` | 311 · 331 · 345 · 440 · 562 | **345 ms** | 200 ms | **estoura 1,7×** |
+
+**As duas árvores reprovam o teto, e o `zero` é a pior das duas.** É a única das
+medidas desta rodada em que o `zero` não ganha.
+
+Duas honestidades sobre a magnitude. Primeira: **o TBT é métrica ruidosa** — a
+amplitude é de 251 ms no `zero` e 173 ms no `main`, e as distribuições se
+sobrepõem (o máximo do `main`, 407 ms, fica acima da mediana do `zero`, 345 ms).
+Segunda: a revisão final mediu o mesmo com n=3 e obteve `main` 328 ms / `zero`
+334 ms — **6 ms** de diferença contra os 63 ms desta medição. **A direção é
+consistente nas duas medições independentes; a magnitude não está resolvida**, e
+afirmar mais que "o `zero` é pior, por uma margem dentro do ruído do
+instrumento" seria inventar precisão.
+
+O que **não** é ruído é o estouro: 282 e 345 contra um teto de 200 não se
+explicam por variância. E isto fecha o argumento da seção 1 no lugar certo. Não
+é só que esta branch não tem asserção de tempo — é que **a asserção que falta
+teria ficado vermelha**, nas duas árvores, desde o começo. "TBT não medido" lia
+como lacuna neutra; medido, é o quarto número que ninguém queria ver.
+
+**Não muda o veredito da hipótese:** TBT não é um dos seis termos. Muda o que a
+seção "o que ficou por fazer" pode dizer, e muda para pior.
 
 ### axe — 10 nós em violação, e o experimento falha este número
 
@@ -252,7 +314,7 @@ decidível.
 | termo da hipótese | veredito |
 |---|---|
 | cinco rotas | **cumprido** — `/`, `/pt/`, `/pt/sobre/`, `/pt/como-e-feito/`, `404.html`, travadas por igualdade estrita de HTML, mais uma lista fechada de extensões permitidas em `out/` (correção I6: a igualdade estrita sozinha só via HTML, e "nem mais nem menos" valia sobre os HTML da árvore, não sobre a árvore) |
-| LCP não pior que o `main` | **cumprido** — melhor sob os dois instrumentos |
+| LCP não pior que o `main` | **cumprido** — melhor sob os dois instrumentos. **Ressalva medida:** os dois lados medem **tipos de elemento diferentes** — `<h1>` no `zero`, `<img>` no `main` (I3). O limiar passa e os números são honestos; o que eles comparam não é a mesma coisa. |
 | CLS não pior que o `main` e ≤ 0,02 | **cumprido** — 0 nas 20 execuções |
 | herói WebGPU dentro do limiar da spec §8 | **cumprido** — 68 233 B contra 97 280 B, 29 047 B de folga |
 | zero violação de axe | **FALHOU** — 10 nós, por escolha declarada do titular |
@@ -335,7 +397,7 @@ contra `_fabrica/oraculos-web.md` e os arquivos de teste da branch:**
 | W1 contrato de rota | toda rota gera arquivo; nenhuma rota fora da tabela | `tests/build/arvore.test.ts` — "é exatamente os cinco HTML, nem mais nem menos" + "não vaza rota de devlog" | **sim**, nos dois sentidos; ferramenta diferente (fs vs playwright) |
 | W2 integridade de link | zero `href` interno sem destino | `tests/build/links.test.ts` | **sim** |
 | W3 orçamento de peso | peso por rota, brotli -q 11 | `ferramentas/medir.mjs` (ferramenta de mão, **sem limiar**) + `peso-heroi.test.ts` (mede o herói, não a rota) | **medida convergente, asserção ausente** — nada nesta branch reprova se uma rota estourar 130 kB |
-| W4 orçamento de tempo | LCP ≤ 2,5 s · CLS ≤ 0,05 · TBT ≤ 200 ms, perfil móvel | este relatório, **à mão, uma vez** | **medida convergente, asserção ausente** — mesmo instrumento e perfil; TBT **não medido**; nenhum teste reprova regressão |
+| W4 orçamento de tempo | LCP ≤ 2,5 s · CLS ≤ 0,05 · TBT ≤ 200 ms, perfil móvel | este relatório, **à mão, uma vez** | **não reproduzido** — mesmo instrumento e perfil, mas o TBT **reprova nas duas árvores** (282 / 345 ms contra 200) e nenhum teste reprova regressão. Contar como convergência era o erro que o I3/I4 expôs. |
 | W5 acessibilidade | axe + contraste ≥ 4,5:1 | `tests/e2e/acessibilidade.spec.ts` | **sim** — e os dois réguas reprovam no mesmo elemento |
 | W6 degradação sem WebGPU | pôster aparece, texto aparece, zero erro de console | `tests/e2e/heroi.spec.ts` | **quase** — pôster e canvas sim; "zero erro no console" não é afirmado |
 | W8 caminhos internos | zero `href`/`src` interno quebrado | `links.test.ts` (src + fragmento) | **parcial** — sem helper de rota nesta branch, a regra do helper não se aplica |
@@ -646,8 +708,11 @@ O 58 do brief não reproduz.
 - **W10 — fidelidade ao mock por pixelmatch.** Nunca implementado nesta branch.
   As três divergências conscientes foram decididas por pessoa e anotadas; a
   quarta, se houver, não tem quem a pegue.
-- **TBT nunca foi medido.** É a terceira métrica do W4 (≤ 200 ms) e não entrou
-  nesta rodada. LCP e CLS entraram.
+- ~~**TBT nunca foi medido.**~~ **Medido, e reprova nas duas árvores**: `main`
+  282 ms, `zero` 345 ms, contra o teto de 200 ms do `W4` — 1,4× e 1,7×. Fica na
+  lista porque continua sem asserção que reprove regressão, e porque **a dívida
+  agora é maior do que quando eu a declarei**: não é uma métrica não medida, é uma
+  métrica vermelha. Ver a seção "TBT" acima para a ressalva de ruído.
 - **O terceiro caso de fallback do herói — falha de `init()` ou de compilação —
   não tem E2E** (lacuna conhecida da T18, deixada de propósito: simular falha de
   compilação de WebGPU em navegador é caro e frágil). Os outros dois casos
