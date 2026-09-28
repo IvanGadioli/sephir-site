@@ -722,6 +722,18 @@ O 58 do brief não reproduz.
   disparou em hardware. O monitor é puro e testado com amostras sintéticas; a
   integração nunca foi exercida por um dispositivo lento de verdade.
 - **"Zero erro no console" do W6 não é afirmado** por nenhum teste desta branch.
+- **Nenhuma asserção reprova regressão de tempo.** O TBT foi medido (282 / 345 ms
+  contra teto de 200) mas à mão, uma vez, neste documento — como o LCP e o CLS.
+  A métrica está vermelha e nada a segura vermelha.
+- **A amostragem temporal de contraste do herói é não determinística.** O
+  `heroi-pintando.spec.ts` (achado I9) tira nove amostras espaçadas de 500 ms com
+  o canvas pintando em GPU real, mas o Chromium estrangula o `requestAnimationFrame`
+  numa janela headed sem foco: o número de instantes **distintos** varia por
+  execução e chegou a degenerar para **um** numa das duas medidas aqui (a outra
+  deu quatro). O teste protege ordem de grandeza — pega um `SATURATION` revertido,
+  que era o objetivo — e **não** protege contra um transiente estreito dentro do
+  ciclo de 10 s. Estabilizar exigiria forçar foco ou dirigir o relógio do `vgpu`
+  por ticker externo.
 - **Nenhum teto de peso por rota é afirmado.** É a lacuna que a revisão desta
   tarefa achou, e é a mais embaraçosa da lista: os únicos tetos de peso que
   reprovam nesta branch são o chunk do herói (97 280 B), o pôster (61 440 B) e o
