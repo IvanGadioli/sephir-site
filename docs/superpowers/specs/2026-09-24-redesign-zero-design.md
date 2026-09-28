@@ -246,21 +246,37 @@ exemplo — não está no chunk de entrada.
 > direto, a 1920 px e a 390 px:
 >
 > ```
-> zero  LCPel: body > div.heroi > div.heroi__texto > h1       (6/6 execuções)
-> main  LCPel: body > header.heroi > img.heroi__fundo         (6/6 execuções)
+> zero  LCPel: body > div.heroi > div.heroi__texto > h1
+> main  LCPel: body > header.heroi > img.heroi__fundo
 > ```
+>
+> **Três medições independentes, nenhuma exceção** — a revisão final (n=3 por
+> árvore), o controlador (n=5) e a re-revisão (n=5), mais `PerformanceObserver`
+> direto a 390 px e a 1920 px. As medianas de LCP diferem entre elas por estado de
+> máquina (`zero` 1 714 / 1 815 / 1 781 ms; `main` 1 988 / 2 007 / 1 990 ms) e o
+> **elemento é o mesmo nas três**.
 >
 > **Mecanismo, estabelecido por experimento e não por leitura:** a causa é
 > `.heroi { min-height: 100svh }` (`estilos/base.css`). O Chromium trata uma
 > imagem que cobre o viewport inteiro como fundo de página e a tira da disputa de
-> LCP. Servindo a mesma árvore com `70svh` no lugar de `100svh`, o pôster **volta
-> a ser** o elemento de LCP; remover os véus ou acrescentar
+> LCP. Servindo a mesma árvore com `70svh` no lugar de `100svh`, **a 390 px** o
+> pôster volta a ser o elemento de LCP; remover os véus ou acrescentar
 > `width`/`height`/`fetchpriority="high"` ao `<img>` não muda nada. No `main` a
 > mesma imagem contava porque lá o `<header class="heroi">` tinha altura de
 > conteúdo.
 >
-> **`100svh` é o design aprovado e fica.** Um LCP de texto a ~1,9 s é melhor que
-> um de imagem a ~2,1 s, e é o que esta branch entrega. O que muda é o que se
+> **Correção da própria correção, achada pela re-revisão:** a frase acima dizia
+> "a 70svh o pôster volta a ser o LCP", sem qualificar viewport. **A 1920 px ele
+> não volta** — ali o `<h1>` continua vencendo mesmo com `70svh`, porque a área do
+> texto cresce com a largura. O experimento do `70svh` estabelece o mecanismo a
+> 390 px, que é o perfil em que a rodada mede; generalizá-lo para toda largura era
+> mais do que o dado sustenta. Este parágrafo e o anterior vinham de duas passagens
+> diferentes da rodada de correção e não tinham sido reconciliados — os números de
+> execução e de tempo divergiam entre esta nota e o relatório, e os desta nota não
+> correspondiam a medição publicada nenhuma. Reconciliados acima.
+>
+> **`100svh` é o design aprovado e fica.** Um LCP de texto a ~1,8 s é melhor que
+> um de imagem a ~2,0 s, e é o que esta branch entrega. O que muda é o que se
 > pode afirmar: o pôster **não entra no caminho crítico de LCP desta página** — ele
 > continua sendo o fallback do herói (as quatro condições acima), e o teto de
 > 60 kB continua valendo como higiene de peso, não como orçamento de LCP.

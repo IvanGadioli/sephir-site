@@ -36,11 +36,15 @@ test.skip(
 // ela estabelece é que em nenhum dos instantes medidos o contraste caiu perto do
 // piso.
 //
-// Ressalva honesta, medida: numa janela headed sem foco o Chromium estrangula o
-// `requestAnimationFrame`, e várias das nove amostras saem idênticas (mesmo
-// contraste, mesmo ponto). O número de amostras distintas é portanto ≤ 9, e
-// varia por execução. Em quatro execuções seguidas nesta máquina o pior ponto
-// observado ficou entre 9,81:1 e 17,63:1 — folga de mais de 3× sobre o piso de
+// Ressalva honesta, medida: várias das nove amostras saem idênticas (mesmo
+// contraste, mesmo ponto), e o número de amostras distintas é ≤ 9 e varia muito
+// por execução — observado de 2 a 4 distintas, e uma execução em que as nove
+// foram iguais. A causa provável é o Chromium estrangular o
+// `requestAnimationFrame` numa janela headed sem foco; isso é **inferência, não
+// medição** — o que está medido é a repetição, não o mecanismo dela.
+//
+// Em execuções seguidas nesta máquina o pior ponto observado ficou entre
+// 9,64:1 e 17,63:1 — folga de mais de 3× sobre o piso de
 // 3:1. O que o teste protege de verdade é a ORDEM DE GRANDEZA: um ajuste de
 // `disk.brightness` ou um `SATURATION` revertido em `composite.wgsl` que levasse
 // o texto para perto do ilegível reprovaria; uma variação de meio ponto entre
@@ -84,7 +88,12 @@ test.describe('o herói pintando de verdade, em GPU real', () => {
       timeout: 60_000,
     });
 
-    const medidas: Array<{ contraste: number; ponto: [number, number]; pixels: number }> = [];
+    const medidas: Array<{
+      contraste: number;
+      ponto: [number, number];
+      pixels: number;
+      desvio: number;
+    }> = [];
     for (let i = 0; i < AMOSTRAS; i++) {
       medidas.push(await piorContraste(page, colors.stardust));
       if (i < AMOSTRAS - 1) await page.waitForTimeout(INTERVALO_MS);
@@ -94,13 +103,33 @@ test.describe('o herói pintando de verdade, em GPU real', () => {
     // o ponto valem mais que "falhou".
     console.log(
       'contraste do h1 sobre o canvas:',
-      medidas.map((m) => `${m.contraste.toFixed(2)}:1 em (${m.ponto.join(',')})`).join(' · '),
+      medidas
+        .map((m) => `${m.contraste.toFixed(2)}:1 em (${m.ponto.join(',')}) σ=${m.desvio.toFixed(1)}`)
+        .join(' · '),
     );
 
     // Amostra vazia é o modo de falha silenciosa deste teste: se o retângulo do
     // <h1> não cair sobre o canvas, o laço mediria zero pixel e o `toBeGreaterThan`
     // abaixo passaria com um contraste calculado do nada.
     for (const m of medidas) expect(m.pixels).toBeGreaterThan(1000);
+
+    // O segundo modo de falha silenciosa, e mais traiçoeiro que o primeiro: a
+    // asserção de contraste é um PISO, então um quadro PRETO a satisfaz com
+    // folga — stardust sobre preto dá ~18:1, o dobro do que o herói real
+    // entrega. Se o `toDataURL` devolvesse quadro vazio, ou se a GPU parasse de
+    // desenhar sem derrubar a classe `--visivel`, este teste ficaria verde
+    // protegendo nada. `pixels` mede área; `desvio` mede CONTEÚDO.
+    //
+    // O piso vem de medição, não de palpite: o desvio-padrão da luminância crua
+    // sob o retângulo do <h1> mediu **7,4** nas execuções observadas, e um quadro
+    // uniforme dá exatamente 0 por aritmética. 3 é um piso folgado que separa as
+    // duas populações sem apertar contra a variação legítima entre instantes. É a
+    // mesma defesa que o `poster.test.ts` já aplicava ao arquivo publicado, que
+    // esta suíte não tinha aplicado ao canvas — o achado I9 da revisão final.
+    for (const m of medidas) {
+      expect(m.desvio, `quadro uniforme em (${m.ponto.join(',')}): o canvas não desenhou`,
+      ).toBeGreaterThan(3);
+    }
     for (const m of medidas) {
       expect(m.contraste, `pior ponto ${m.ponto.join(',')}`).toBeGreaterThanOrEqual(
         CONTRASTE_MINIMO,
@@ -130,7 +159,7 @@ test.describe('o herói pintando de verdade, em GPU real', () => {
 async function piorContraste(
   page: Page,
   hexTexto: string,
-): Promise<{ contraste: number; ponto: [number, number]; pixels: number }> {
+): Promise<{ contraste: number; ponto: [number, number]; pixels: number; desvio: number }> {
   return page.evaluate(async (hex: string) => {
     const canvas = document.querySelector('.heroi__canvas');
     if (!(canvas instanceof HTMLCanvasElement)) throw new Error('`.heroi__canvas` não é <canvas>');
@@ -149,7 +178,7 @@ async function piorContraste(
     const x1 = Math.min(canvas.width, Math.round((rh.right - rc.left) * escala));
     const y1 = Math.min(canvas.height, Math.round((rh.bottom - rc.top) * escala));
     if (x1 <= x0 || y1 <= y0) {
-      return { contraste: 0, ponto: [x0, y0] as [number, number], pixels: 0 };
+      return { contraste: 0, ponto: [x0, y0] as [number, number], pixels: 0, desvio: 0 };
     }
 
     // Um canvas com contexto WebGPU não aceita `getContext('2d')`, então a
@@ -239,6 +268,21 @@ async function piorContraste(
     const n = Number.parseInt(hex.slice(1), 16);
     const lTexto = luminancia((n >> 16) & 255, (n >> 8) & 255, n & 255);
 
+    // Desvio-padrão da luminância CRUA do canvas (antes dos véus), pelo mesmo
+    // motivo que o `poster.test.ts` mede desvio no arquivo publicado: a asserção
+    // de contraste é um PISO, então um quadro preto ou vazio a satisfaz com folga
+    // — stardust sobre preto dá ~18:1 e o teste passaria protegendo nada. O
+    // guarda de `pixels` mede área, não conteúdo. Este mede conteúdo.
+    let soma = 0;
+    let somaQ = 0;
+    const n0 = dados.length / 4;
+    for (let i = 0; i < dados.length; i += 4) {
+      const l = 0.2126 * (dados[i] ?? 0) + 0.7152 * (dados[i + 1] ?? 0) + 0.0722 * (dados[i + 2] ?? 0);
+      soma += l;
+      somaQ += l * l;
+    }
+    const desvio = Math.sqrt(Math.max(0, somaQ / n0 - (soma / n0) ** 2));
+
     let pior = Number.POSITIVE_INFINITY;
     let ponto: [number, number] = [x0, y0];
     const largura = x1 - x0;
@@ -264,6 +308,6 @@ async function piorContraste(
         ponto = [x, y];
       }
     }
-    return { contraste: pior, ponto, pixels: dados.length / 4 };
+    return { contraste: pior, ponto, pixels: dados.length / 4, desvio };
   }, hexTexto);
 }
