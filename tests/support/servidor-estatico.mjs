@@ -1,151 +1,61 @@
-// Suporte de teste, não implementação: uma origem estática de terceiro que
-// resolve os caminhos exatamente como o Cloudflare Pages resolve um export
-// do Next com trailingSlash:true — porque se ela resolver diferente, os
-// testes de link (C) e a metade local de B medem o servidor, não o site.
-// node:http + node:zlib puros, sem dependência nova (playwright.config.ts já
-// cita este arquivo como webServer).
-//
-// Contrato (Tarefa 5, 04_plano.md):
-//   /              -> 200, out/index.html
-//   /pt/           -> 200, out/pt/index.html
-//   /pt            -> 301 para /pt/
-//   caminho ausente-> 404, corpo de out/404.html
-//   Accept-Encoding: br   -> content-encoding: br, qualidade 11  (preferido)
-//   Accept-Encoding: gzip -> content-encoding: gzip, nível 9
-//
-// Brotli é a codificação de referência desde `adr-fab-006`: o orçamento de
-// peso existe para limitar o que o visitante baixa, e o Cloudflare Pages serve
-// brotli. Medir gzip -9 media um proxy conservador que reprovava o que o fio
-// aprova. Brotli é preferido quando o cliente aceita os dois — que é o caso do
-// Chrome, e portanto do Lighthouse.
-//   sem out/       -> sobe assim mesmo e responde 404 em tudo
-
+import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
-import { existsSync } from 'node:fs';
-import { readFile as readFileAsync } from 'node:fs/promises';
-import { join, extname } from 'node:path';
+import { extname, join, normalize } from 'node:path';
 
+// A raiz vem de argv, com `out` por padrão. Não é embutida: a Tarefa 23 precisa
+// servir `baseline-main-ed68bd4/` com o MESMO servidor para a comparação ser
+// honesta, e editar o caminho à mão a cada medição é como se acaba servindo o
+// diretório errado sem perceber.
+const RAIZ = new URL(`../../${process.argv[2] ?? 'out'}/`, import.meta.url).pathname;
+const PORTA = Number(process.argv[3] ?? 4173);
+
+/** @type {Record<string, string>} */
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
-  '.txt': 'text/plain; charset=utf-8',
-  '.ico': 'image/x-icon',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
   '.webp': 'image/webp',
   '.woff2': 'font/woff2',
+  '.wgsl': 'text/plain; charset=utf-8',
+  '.svg': 'image/svg+xml',
 };
 
-function tipoDe(caminho) {
-  return TIPOS[extname(caminho)] ?? 'application/octet-stream';
+// Resolve como um host real: /rota/ → /rota/index.html, e qualquer coisa que
+// não casa cai no 404.html — que é exatamente o que o Cloudflare Pages faz.
+/** @param {string | undefined} urlBruta */
+function resolver(urlBruta) {
+  // O segundo `?? '/'` é do `noUncheckedIndexedAccess`, que o `checkJs` da
+  // correção I5 finalmente passou a aplicar a este arquivo: `split('?')[0]` é
+  // `string | undefined` para o compilador. Em execução nunca é undefined —
+  // `String.split` sempre devolve ao menos um elemento —, mas o compilador não
+  // sabe disso e o default certo para uma URL vazia é a raiz de todo modo.
+  const caminho = decodeURIComponent((urlBruta ?? '/').split('?')[0] ?? '/');
+  const seguro = normalize(caminho).replace(/^(\.\.[/\\])+/, '');
+  let alvo = join(RAIZ, seguro);
+  if (existsSync(alvo) && statSync(alvo).isDirectory()) alvo = join(alvo, 'index.html');
+  if (!existsSync(alvo)) return { alvo: join(RAIZ, '404.html'), status: 404 };
+  return { alvo, status: 200 };
 }
 
-function enviar(res, status, corpo, tipo, codificacao, cabecalhosExtra = {}) {
-  const buf = typeof corpo === 'string' ? Buffer.from(corpo, 'utf8') : corpo;
-  const cabecalhos = { 'content-type': tipo, ...cabecalhosExtra };
-  if (codificacao) {
-    const comprimido =
-      codificacao === 'br'
-        ? brotliCompressSync(buf, {
-            params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 11 },
-          })
-        : gzipSync(buf, { level: 9 });
-    cabecalhos['content-encoding'] = codificacao;
-    cabecalhos['content-length'] = String(comprimido.length);
-    res.writeHead(status, cabecalhos);
-    res.end(comprimido);
+createServer((req, res) => {
+  const { alvo, status } = resolver(req.url);
+  if (!existsSync(alvo)) {
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('alvo ausente: rode `npm run build` antes dos testes');
     return;
   }
-  cabecalhos['content-length'] = String(buf.length);
-  res.writeHead(status, cabecalhos);
-  res.end(buf);
-}
-
-async function tentarLer(caminho) {
-  try {
-    return await readFileAsync(caminho);
-  } catch {
-    return null;
-  }
-}
-
-export function criarServidor({ raiz, porta = 4173 }) {
-  return new Promise((resolve, reject) => {
-    const servidor = createServer(async (req, res) => {
-      // brotli antes de gzip: é o que o Cloudflare entrega quando o cliente
-      // aceita os dois, e é a codificação de referência (`adr-fab-006`).
-      const aceita = String(req.headers['accept-encoding'] ?? '');
-      const aceitaGzip = aceita.includes('br')
-        ? 'br'
-        : aceita.includes('gzip')
-          ? 'gzip'
-          : null;
-      const urlBruta = req.url ?? '/';
-      const semQuery = urlBruta.split('?')[0].split('#')[0];
-
-      if (!existsSync(raiz)) {
-        enviar(res, 404, 'out/ ausente', 'text/plain; charset=utf-8', aceitaGzip);
-        return;
-      }
-
-      const temExtensao = extname(semQuery) !== '';
-
-      if (temExtensao) {
-        const arquivo = join(raiz, decodeURIComponent(semQuery));
-        const conteudo = await tentarLer(arquivo);
-        if (conteudo) {
-          enviar(res, 200, conteudo, tipoDe(semQuery), aceitaGzip);
-          return;
-        }
-        const corpo404 = (await tentarLer(join(raiz, '404.html'))) ?? Buffer.from('404');
-        enviar(res, 404, corpo404, 'text/html; charset=utf-8', aceitaGzip);
-        return;
-      }
-
-      if (!semQuery.endsWith('/')) {
-        res.writeHead(301, { location: `${semQuery}/` });
-        res.end();
-        return;
-      }
-
-      const indice = join(raiz, decodeURIComponent(semQuery), 'index.html');
-      const conteudo = await tentarLer(indice);
-      if (conteudo) {
-        enviar(res, 200, conteudo, 'text/html; charset=utf-8', aceitaGzip);
-        return;
-      }
-
-      const corpo404 = (await tentarLer(join(raiz, '404.html'))) ?? Buffer.from('404');
-      enviar(res, 404, corpo404, 'text/html; charset=utf-8', aceitaGzip);
-    });
-
-    servidor.on('error', reject);
-    servidor.listen(porta, () => {
-      resolve({
-        url: `http://localhost:${porta}`,
-        fechar: () =>
-          new Promise((res2, rej2) => {
-            servidor.close((err) => (err ? rej2(err) : res2()));
-          }),
-      });
-    });
-  });
-}
-
-// playwright.config.ts cita este arquivo como `webServer.command`; quando
-// executado diretamente (não importado), sobe na porta 4173 e fica no ar.
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const porta = Number(process.env.PORTA_SERVIDOR_ESTATICO ?? 4173);
-  criarServidor({ raiz: 'out', porta })
-    .then(({ url }) => {
-      // eslint-disable-next-line no-console
-      console.log(`servidor estático em ${url} (raiz: out/)`);
-    })
-    .catch((err) => {
-      console.error(err);
-      process.exit(1);
-    });
-}
+  // Sem Content-Length (vira Transfer-Encoding: chunked) — ao contrário do
+  // Cloudflare Pages, que sempre declara o tamanho. A Tarefa 22 achou que essa
+  // ausência, combinada com certos builds do Chromium, faz um WebP grande e
+  // ruidoso (não um PNG simples) renderizar em cinza puro na tela, embora o
+  // arquivo tenha cor real — ver `ferramentas/capturar-poster.md`, achado 2.
+  // Não é bug de produção; é só uma pegadinha para quem tirar screenshot de
+  // pixel via ESTE servidor. Não mudei para Content-Length aqui porque é
+  // infraestrutura compartilhada por toda a suíte (E2E, peso do herói) e a
+  // mudança está fora do escopo daquela tarefa.
+  res.writeHead(status, { 'content-type': TIPOS[extname(alvo)] ?? 'application/octet-stream' });
+  createReadStream(alvo).pipe(res);
+}).listen(PORTA, () => {
+  console.log(`servindo ${RAIZ} em http://localhost:${PORTA}`);
+});

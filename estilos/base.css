@@ -1,0 +1,411 @@
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('/fontes/space-grotesk-latin.woff2') format('woff2');
+  font-weight: 300 500;
+  font-style: normal;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  src: url('/fontes/space-mono-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: optional;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+
+body {
+  background: var(--cor-void);
+  color: var(--cor-stardust);
+  font-family: var(--fonte-body);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Peso 300 é o valor dos artboards, e diverge do theme.ts de propósito.
+   Ver lib/marca.ts. */
+h1, h2, h3 {
+  font-family: var(--fonte-display);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+a { color: var(--cor-amber); text-decoration: none; }
+a:hover { color: var(--cor-amber-dim); }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--cor-amber);
+  outline-offset: 3px;
+}
+
+img { max-width: 100%; display: block; }
+
+.mono {
+  font-family: var(--fonte-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.6875rem;
+}
+
+.envoltorio { max-width: 1200px; margin: 0 auto; padding-inline: clamp(1.5rem, 8vw, 154px); }
+
+.topo {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem clamp(1.5rem, 8vw, 154px);
+}
+
+.wordmark {
+  font-family: var(--fonte-display);
+  font-weight: 500;
+  font-size: 1.0625rem;
+  letter-spacing: 0.02em;
+}
+.wordmark__sephir { color: var(--cor-amber); }
+.wordmark__studio { color: var(--cor-stardust); }
+
+.navegacao { display: flex; gap: 2.75rem; }
+.navegacao a, .navegacao__ausente {
+  font-size: 0.875rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+}
+
+/* As duas navegações, UM contrato de estado (spec §4 e §6.3): ativo em
+   stardust, inativo em muted, ausente em muted, iguais no desktop e no painel
+   móvel. As cores vivem aqui em vez de junto do resto da tipografia porque o
+   defeito que a revisão final achou (I1 e I2) era de cascata, e a correção
+   precisa ser imune a ordem de declaração:
+
+   - I1: `.navegacao a` tem especificidade (0,1,1) e `.navegacao__ativo` só
+     (0,1,0). A primeira vencia, e o item da página atual ficava muted como os
+     outros três — nenhuma indicação visual de seção no desktop.
+   - I2: os <a> do painel móvel vivem em `.menu-movel__lista`, FORA de
+     `.navegacao`, então nenhuma das duas regras os alcançava e eles caíam no
+     `a { color: var(--cor-amber) }` global lá em cima — o INATIVO ficava
+     âmbar, a cor de acento e de ação, e a hierarquia de estado saía invertida
+     em relação ao desktop.
+
+   Os dois seletores abaixo são disjuntos por construção (`:not` de um lado, a
+   classe do outro) e têm a mesma especificidade (0,2,1), então trocar a ordem
+   das regras não muda a cor de nada — é isso, e não a posição no arquivo, que
+   protege a correção. A asserção que a trava está em
+   `tests/e2e/marca.spec.ts`. */
+.navegacao a:not(.navegacao__ativo),
+.menu-movel__lista a:not(.navegacao__ativo),
+.navegacao__ausente {
+  color: var(--cor-muted);
+}
+.navegacao a.navegacao__ativo,
+.menu-movel__lista a.navegacao__ativo {
+  color: var(--cor-stardust);
+}
+.navegacao a:hover, .menu-movel__lista a:hover { color: var(--cor-stardust); }
+
+/* Abaixo de 768px a navegação de desktop some; o painel .menu-movel
+   (details/summary, definido mais abaixo) assume no lugar dela. */
+@media (max-width: 767px) {
+  .topo { padding: 1.25rem 1.5rem; }
+  .navegacao { display: none; }
+}
+
+.rodape__interno {
+  border-top: 1px solid var(--cor-border);
+  padding: 4rem 0 5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2rem;
+}
+.rodape__marca { display: flex; flex-direction: column; gap: 1rem; }
+.rodape__marca img { opacity: 0.85; height: auto; }
+.rodape__tagline { font-size: 0.8125rem; color: var(--cor-faint); }
+.rodape__cnpj { font-size: 0.875rem; color: var(--cor-muted); }
+.rodape__links { display: flex; gap: 2rem; }
+
+@media (max-width: 767px) {
+  .rodape__interno { flex-direction: column; align-items: flex-start; gap: 2.5rem; }
+}
+
+.faixa { position: relative; overflow: hidden; background: var(--cor-void); }
+.faixa--alta { min-height: 420px; }
+.faixa--baixa { min-height: 340px; }
+
+.faixa__fundo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+}
+/* Exceção declarada: rgba() literal em parada de gradiente.
+   Este é o overlay do artboard, e seu valor em rgba não pode ser
+   expresso como variável sem color-mix(), que mudaria a cor final.
+   Fora deste contexto, sempre use var(--cor-*). */
+.faixa__veu {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 7, 14, 0.75), rgba(5, 7, 14, 0.98));
+}
+
+.faixa__texto {
+  position: absolute;
+  bottom: 3.5rem;
+  left: clamp(1.5rem, 8vw, 154px);
+  right: clamp(1.5rem, 8vw, 154px);
+}
+.faixa__texto h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+.faixa__regua { width: 64px; height: 1px; background: var(--cor-amber); margin-bottom: 1.5rem; }
+.faixa__sub {
+  font-size: 1.0625rem;
+  font-weight: 300;
+  color: var(--cor-muted);
+  margin-top: 1rem;
+}
+
+.secao { padding-block: clamp(3.5rem, 8vw, 8rem); }
+.eyebrow { letter-spacing: 0.18em; font-size: 0.75rem; margin-bottom: 1.5rem; }
+.eyebrow__numero { color: var(--cor-amber); }
+.eyebrow__rotulo { color: var(--cor-muted); }
+.secao h2 { font-size: clamp(2rem, 4vw, 3.25rem); margin-bottom: 2.5rem; }
+
+.linha {
+  display: grid;
+  gap: 2rem;
+  align-items: baseline;
+  border-top: 1px solid var(--cor-border);
+  padding-block: 1.5rem;
+}
+.linha--estado { grid-template-columns: 140px 1fr; }
+.linha--portao { grid-template-columns: 64px 240px 1fr; padding-block: 1.75rem; }
+
+.linha__rotulo { font-family: var(--fonte-mono); font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.linha__rotulo--existe { color: var(--cor-amber); }
+.linha__rotulo--construcao { color: var(--cor-stardust); }
+.linha__rotulo--ausente { color: var(--cor-muted); }
+.linha__numero { font-family: var(--fonte-mono); font-size: 1.25rem; color: var(--cor-amber); }
+.linha__corpo { font-size: 1.0625rem; color: var(--cor-stardust); }
+.linha__nota { font-size: 0.9375rem; color: var(--cor-muted); }
+
+@media (max-width: 767px) {
+  .linha--estado, .linha--portao { grid-template-columns: 1fr; gap: 0.5rem; }
+}
+
+.seta__regua { width: 64px; height: 1px; background: var(--cor-amber); margin-bottom: 1rem; }
+.seta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  font-size: 0.875rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--cor-stardust);
+}
+.seta:hover { color: var(--cor-amber); }
+
+.heroi { position: relative; min-height: 100svh; overflow: hidden; }
+.heroi__poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Exceção declarada: rgba() literal em parada de gradiente.
+   Os dois overlays abaixo são o herói do artboard, copiados sem retoque
+   (spec §5) — composições em alfa de --cor-void que custom property não
+   expressa sem color-mix(), e color-mix() mudaria a cor final. Fora deste
+   contexto, sempre use var(--cor-*). */
+.heroi__veu-lateral {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(5, 7, 14, 0.97) 0%, rgba(5, 7, 14, 0.72) 38%, rgba(5, 7, 14, 0.1) 62%);
+}
+.heroi__veu-vertical {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 7, 14, 0.5) 0%, rgba(5, 7, 14, 0) 25%, rgba(5, 7, 14, 0.85) 100%);
+}
+.heroi__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+.heroi__canvas--visivel { opacity: 1; }
+
+/* Quem pediu movimento reduzido nunca vê o canvas — o componente sequer o
+   monta. Esta regra é a segunda linha de defesa, para o caso de a preferência
+   mudar depois da montagem. */
+@media (prefers-reduced-motion: reduce) {
+  .heroi__canvas { display: none; }
+}
+.heroi__texto {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: clamp(1.5rem, 8vw, 154px);
+  right: clamp(1.5rem, 8vw, 154px);
+  max-width: 700px;
+}
+.heroi__texto h1 { font-size: clamp(2.75rem, 6vw, 4.5rem); line-height: 1.02; }
+.heroi__linha {
+  font-size: clamp(1.0625rem, 2vw, 1.625rem);
+  font-weight: 300;
+  color: var(--cor-muted);
+  margin-top: 1.5rem;
+  max-width: 520px;
+  line-height: 1.5;
+}
+
+.selo { display: flex; align-items: center; gap: 0.625rem; color: var(--cor-faint); margin-bottom: 1.375rem; }
+.selo__ponto { width: 4px; height: 4px; border-radius: 50%; background: var(--cor-amber); flex: none; }
+
+.ficha {
+  border-top: 1px solid var(--cor-border);
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem 4rem;
+}
+.ficha__item dt { color: var(--cor-muted); margin-bottom: 0.5rem; }
+.ficha__item dd { font-size: 0.9375rem; color: var(--cor-stardust); }
+
+.colunas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3.5rem; }
+.colunas p { color: var(--cor-muted); line-height: 1.75; }
+
+/* O artboard estiliza este wrapper: `display:flex; flex-direction:column; gap:0`
+   (Main.dc.html:110, ComoEFeito.dc.html:71). Sem a regra, a classe `.lista` fica
+   órfã no JSX — foi o que a revisão da Tarefa 10 pegou. */
+.lista { display: flex; flex-direction: column; }
+.lista__fecho { border-top: 1px solid var(--cor-border); }
+
+.metodo { display: grid; grid-template-columns: 1fr 380px; gap: 5rem; }
+.metodo__texto { color: var(--cor-muted); line-height: 1.75; max-width: 560px; margin-bottom: 3rem; }
+
+/* Divergência consciente do mock: o artboard desenha 8 colunas na grade dos
+   portões. Em 380px de coluna, oito células de 40px com 8px de intervalo
+   somam 376px e encostam na borda. Duas fileiras de quatro (4 colunas) dá a
+   mesma informação sem aperto — ver task-10-report.md e o relatório da
+   Tarefa 23. */
+.grade-portoes {
+  display: grid;
+  grid-template-columns: repeat(4, 40px);
+  grid-auto-rows: 40px;
+  gap: 8px;
+  align-content: start;
+  justify-content: end;
+  list-style: none;
+}
+.portao {
+  border: 1px solid var(--cor-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--fonte-mono);
+  font-size: 0.6875rem;
+  color: var(--cor-muted);
+}
+/* rgba() literal aqui é valor normativo do brief da Tarefa 10 (mesmo tom de
+   --cor-amber, em alfa 16%). Fora do escopo estrito da exceção declarada
+   acima — não é parada de gradiente, é um fill — mas nenhum var(--cor-*)
+   expressa esse alfa sem color-mix(). Ver task-10-report.md. */
+.portao--cumprido {
+  border-color: var(--cor-amber);
+  background: rgba(232, 150, 58, 0.16);
+  color: var(--cor-stardust);
+}
+
+.apenas-movel { display: none; margin-top: 2.25rem; }
+
+@media (max-width: 767px) {
+  .colunas { grid-template-columns: 1fr; gap: 1.75rem; }
+  .metodo { grid-template-columns: 1fr; gap: 3rem; }
+  .grade-portoes { justify-content: start; }
+  .ficha { gap: 1.25rem 2rem; }
+  .apenas-movel { display: block; }
+}
+
+.prosa { color: var(--cor-muted); line-height: 1.75; max-width: 760px; }
+
+.cartoes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  max-width: 760px;
+  margin-top: 2.5rem;
+}
+.cartao { border: 1px solid var(--cor-border); background: var(--cor-void2); padding: 2rem; }
+.cartao__rotulo { color: var(--cor-muted); margin-bottom: 0.75rem; }
+.cartao__valor { font-size: 1.125rem; font-weight: 300; color: var(--cor-stardust); word-break: break-word; }
+.cartao__valor:hover { color: var(--cor-amber); }
+
+@media (max-width: 767px) {
+  .cartoes { grid-template-columns: 1fr; }
+}
+
+.abertura { padding-block: clamp(3rem, 6vw, 6rem) 2rem; }
+.prosa--larga { max-width: 900px; }
+.regra-dura { padding-block: 3rem clamp(4rem, 8vw, 8rem); }
+.caixa { background: var(--cor-void2); border: 1px solid var(--cor-border); padding: 2.5rem; }
+.caixa__titulo { font-size: 1.25rem; color: var(--cor-stardust); margin-bottom: 1rem; }
+.caixa__corpo { font-size: 0.9375rem; line-height: 1.7; color: var(--cor-muted); max-width: 760px; }
+
+.erro { position: relative; min-height: 100svh; display: grid; place-items: center; }
+.erro__miolo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6rem 1.5rem 3rem;
+}
+.erro__miolo img { opacity: 0.9; height: auto; margin-bottom: 2.5rem; max-width: 60vw; }
+.erro__codigo { letter-spacing: 0.3em; color: var(--cor-amber); margin-bottom: 1.75rem; font-size: 0.875rem; }
+.erro__miolo h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 1.25rem; }
+.erro__texto { color: var(--cor-muted); max-width: 520px; line-height: 1.6; margin-bottom: 2.5rem; }
+
+.menu-movel { display: none; position: relative; }
+.menu-movel > summary {
+  list-style: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cor-stardust);
+  cursor: pointer;
+}
+.menu-movel > summary::-webkit-details-marker { display: none; }
+.menu-movel__lista {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--cor-void2);
+  border: 1px solid var(--cor-border-strong);
+}
+.menu-movel__lista a, .menu-movel__lista span { min-height: 44px; display: flex; align-items: center; }
+
+@media (max-width: 767px) {
+  .menu-movel { display: block; }
+}

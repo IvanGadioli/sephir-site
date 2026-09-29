@@ -1,8 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Aponta para o Chromium do sistema (/usr/bin/chromium) em vez de deixar o
-// Playwright baixar o seu próprio binário (~150 MB). Ver 04_testes/CONTEXT.md
-// para a justificativa.
+// `tests/e2e/heroi-pintando.spec.ts` só faz sentido headed, e os dois projetos
+// headless precisam ignorá-lo explicitamente — sem isto ele rodaria três vezes,
+// duas delas num ambiente onde o canvas nunca pinta.
+const SO_HEADED = /heroi-pintando\.spec\.ts/;
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 30_000,
@@ -10,20 +12,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [['list']],
-  use: {
-    baseURL: 'http://localhost:4173',
-    trace: 'retain-on-failure',
-  },
-  // Serve out/ com resolução de caminho tipo host real (ver
-  // tests/support/servidor-estatico.mjs — não é `serve`, é node:http puro
-  // para não crescer devDependencies). Sobe mesmo com out/ ausente: cada
-  // teste checa a ausência do alvo explicitamente antes de navegar, para que
-  // a mensagem de falha diga "alvo ausente" e não "conexão recusada".
-  // `port`, não `url`: a checagem de prontidão por `url` do Playwright exige
-  // 2xx, e o servidor responde 404 em tudo enquanto out/ não existir — o que
-  // faria o webServer nunca "ficar pronto" e o erro reportado seria um
-  // timeout genérico do Playwright, não a mensagem de alvo ausente que os
-  // testes escrevem. `port` só confere que algo escuta a porta.
+  use: { baseURL: 'http://localhost:4173', trace: 'retain-on-failure' },
   webServer: {
     command: 'node tests/support/servidor-estatico.mjs',
     port: 4173,
@@ -32,12 +21,39 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium-sistema',
+      name: 'desktop-1920',
+      testIgnore: SO_HEADED,
       use: {
         ...devices['Desktop Chrome'],
-        launchOptions: {
-          executablePath: '/usr/bin/chromium',
-        },
+        viewport: { width: 1920, height: 1080 },
+        launchOptions: { executablePath: '/usr/bin/chromium' },
+      },
+    },
+    {
+      name: 'movel-390',
+      testIgnore: SO_HEADED,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 390, height: 844 },
+        isMobile: false,
+        launchOptions: { executablePath: '/usr/bin/chromium' },
+      },
+    },
+    // O único projeto headed, e o único em que o herói realmente pinta (I9).
+    // Em headless `navigator.gpu` existe mas `requestAdapter()` devolve `null`,
+    // então os 37 testes dos dois projetos acima nunca exercitaram o caminho de
+    // pintura — descoberta de `ferramentas/capturar-poster.md`. Este projeto
+    // aponta um Chromium headed para o X real da máquina; o arquivo que ele roda
+    // faz `test.skip` quando `DISPLAY` está ausente, para que a suíte continue
+    // rodando em CI sem display em vez de ficar vermelha por falta de hardware.
+    {
+      name: 'headed-webgpu',
+      testMatch: SO_HEADED,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+        headless: false,
+        launchOptions: { executablePath: '/usr/bin/chromium' },
       },
     },
   ],

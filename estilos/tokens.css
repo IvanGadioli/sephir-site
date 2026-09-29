@@ -1,0 +1,21 @@
+/* GERADO por ferramentas/gerar-tokens.mjs a partir de lib/marca.ts.
+ * Não editar à mão: tests/unit/tokens.test.ts reprova qualquer divergência.
+ */
+:root {
+  --cor-void: #05070E;
+  --cor-void2: #0C1220;
+  --cor-void3: #141C30;
+  --cor-amber: #E8963A;
+  --cor-amber-dim: #C77A28;
+  --cor-teal: #3FB89E;
+  --cor-teal-dim: #329680;
+  --cor-stardust: #F4EFE6;
+  --cor-muted: #8A93A8;
+  --cor-faint: #4A5468;
+  --cor-border: rgba(244, 239, 230, 0.10);
+  --cor-border-strong: rgba(244, 239, 230, 0.18);
+
+  --fonte-display: 'Space Grotesk', system-ui, sans-serif;
+  --fonte-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fonte-mono: 'Space Mono', ui-monospace, monospace;
+}

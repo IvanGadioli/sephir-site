@@ -1,22 +1,141 @@
-import { test, expect } from '@playwright/test';
-import { medirW5 } from '../../ferramentas/oraculos/w5-axe.mjs';
-import { ROTAS } from '../../lib/rotas';
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Page } from '@playwright/test';
+import { ROTAS as ROTAS_DO_SITE } from '../../lib/rotas.ts';
 
-const alvos = [...ROTAS.map((r) => r.rota), '/404.html'];
+// Derivado de `lib/rotas.ts`, não digitado à mão: uma rota nova acrescentada lá
+// passa a ser varrida pelo axe automaticamente. O devlog já está previsto para
+// uma rodada futura, e uma lista local não o acompanharia — o site ganharia
+// rota sem cobertura de acessibilidade, em silêncio.
+// A rota inexistente entra à parte de propósito: ela não é rota do site, é o
+// caminho que faz o host servir o 404.
+const ROTAS = [...ROTAS_DO_SITE.map((r) => r.rota), '/rota-que-nao-existe/'];
 
-for (const rota of alvos) {
-  test(`G — ${rota} sem violação serious ou critical`, async ({ page }) => {
-    const r = await medirW5({ page, rotas: [rota] });
-    expect(r.violacoes).toEqual([]);
+const TAGS_WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+
+// `/` tem <meta http-equiv="refresh" content="0; url=/pt/"> (ver
+// app/page.tsx e tests/build/casca.test.ts): o refresh pode disparar durante
+// a injeção do axe e destruir o contexto de execução a meio da análise —
+// `page.evaluate: Execution context was destroyed, most likely because of a
+// navigation`. Não é falha de asserção nem do site, é uma corrida real entre
+// o redirecionamento e o axe. Uma segunda tentativa, depois que a navegação
+// já terminou, resolve — sem depender de heurística de rede ociosa, que sob
+// carga da máquina pode ela mesma estourar o timeout do teste.
+async function analisarComRetentativa(page: Page) {
+  try {
+    return await new AxeBuilder({ page }).withTags(TAGS_WCAG).analyze();
+  } catch (erro) {
+    if (erro instanceof Error && erro.message.includes('Execution context was destroyed')) {
+      await page.waitForLoadState('load');
+      return await new AxeBuilder({ page }).withTags(TAGS_WCAG).analyze();
+    }
+    throw erro;
+  }
+}
+
+// Uma violação de contraste é aceita por decisão do titular em 2026-09-25:
+// --cor-faint (#4A5468) sobre --cor-void dá 2,64:1, e WCAG AA pede 4,5:1
+// para texto normal. A causa está na paleta da marca — o theme.ts declara
+// `faint` como cor de texto terciário/captions, um uso que essa cor não
+// serve sobre o próprio --cor-void — não no site, e a correção ficou fora
+// desta rodada. Ver a nota na spec, seção 8.
+//
+// NÃO é para desligar a regra `color-contrast`: a lista abaixo trava o
+// escopo exato do que foi aceito, seletor por seletor, então uma violação
+// nova — ou este mesmo par de cores aparecendo num terceiro elemento —
+// ainda reprova. Confirmado com um script de investigação isolado (fora da
+// suíte) contra as cinco rotas nos dois viewports: em todas as ocorrências
+// o `target` do axe é exatamente `.rodape__tagline`, nenhum outro seletor.
+const CONTRASTE_ACEITO = ['.rodape__tagline'];
+
+for (const rota of ROTAS) {
+  test(`axe não acha violação em ${rota}`, async ({ page }) => {
+    await page.goto(rota, { waitUntil: 'load' });
+    const resultado = await analisarComRetentativa(page);
+
+    const inesperadas = resultado.violations.flatMap((violacao) =>
+      violacao.nodes
+        .filter(
+          (no) =>
+            !(violacao.id === 'color-contrast' && CONTRASTE_ACEITO.includes(no.target.join(' '))),
+        )
+        .map((no) => `${violacao.id}: ${no.target.join(' ')}`),
+    );
+
+    // Os `incomplete` ficam à mostra na falha em vez de escondidos: são os
+    // casos que o axe não conseguiu decidir sozinho, e ignorá-los é escolher
+    // não saber. Nas rotas com herói/faixa de imagem (/, /pt/, /pt/sobre/)
+    // o axe devolve `color-contrast` como incomplete (não violação) para o
+    // texto sobre `.heroi__veu-vertical`/`.faixa__veu`: o gradiente é
+    // semitransparente sobre uma imagem fotográfica, e o axe não sabe o
+    // pixel exato por baixo — `messageKey: "bgGradient"`. É indeterminação
+    // estrutural do CSS, não o mesmo problema da violação aceita acima
+    // (que é sobre --cor-void, fundo chapado, fora de dúvida).
+    if (resultado.incomplete.length > 0) {
+      console.warn('incomplete:', resultado.incomplete.map((i) => i.id).join(', '));
+    }
+    if (inesperadas.length > 0) {
+      console.error(JSON.stringify(resultado.violations, null, 2));
+    }
+    expect(inesperadas).toEqual([]);
   });
 }
 
-test('J — presença e validade de lang, pelo axe', async ({ page }) => {
-  const r = await medirW5({ page, rotas: alvos, regras: ['html-has-lang', 'html-lang-valid'] });
-  expect(r.violacoes).toEqual([]);
+test('o alvo de toque do menu móvel tem 44px', async ({ page }) => {
+  await page.goto('/pt/');
+  const caixa = await page.locator('.menu-movel > summary').boundingBox();
+  if (caixa === null) {
+    // Acima de 768px o menu móvel está display:none e não tem caixa. Isso é
+    // o comportamento certo, não uma falha.
+    expect(await page.locator('.menu-movel').isVisible()).toBe(false);
+    return;
+  }
+  expect(caixa.width).toBeGreaterThanOrEqual(44);
+  expect(caixa.height).toBeGreaterThanOrEqual(44);
 });
 
-test('as entradas incomplete de contraste são reportadas, não engolidas', async ({ page }) => {
-  const r = await medirW5({ page, rotas: alvos });
-  expect(Array.isArray(r.detalhe.incomplete)).toBe(true);
+// O alvo de toque da `Seta` mora em `estilos/base.css` (`.seta { min-height:
+// 44px }`) e não tinha asserção que pudesse falhar (achado I8). O unitário
+// prometia 44 px no nome e afirmava que a classe existe no corpo —
+// `renderToStaticMarkup` não vê CSS, então apagar o `min-height` deixava a
+// suíte inteira verde. Pior: o ledger fechou a T9 dizendo que "a T17 vai medir
+// a 390 px", e a T17 só mediu `.menu-movel > summary`.
+//
+// Aqui a caixa é medida de verdade, em toda `.seta` visível, nas cinco rotas e
+// nos dois viewports — as rotas derivadas de `lib/rotas.ts` como no resto do
+// arquivo, para que rota nova entre sozinha.
+const ALVO_DE_TOQUE_PX = 44;
+
+for (const rota of ROTAS) {
+  test(`toda .seta visível em ${rota} tem alvo de toque de 44px`, async ({ page }) => {
+    await page.goto(rota, { waitUntil: 'load' });
+    const setas = page.locator('.seta');
+    const total = await setas.count();
+    const medidas: string[] = [];
+    for (let i = 0; i < total; i++) {
+      const seta = setas.nth(i);
+      // `.apenas-movel` esconde uma das setas acima de 768px: sem caixa não há
+      // alvo de toque, e isso é o comportamento certo, não uma falha.
+      if (!(await seta.isVisible())) continue;
+      const caixa = await seta.boundingBox();
+      expect(caixa, await seta.innerText()).not.toBeNull();
+      medidas.push(`${await seta.innerText()} ${caixa?.width}x${caixa?.height}`);
+      expect(caixa?.height, await seta.innerText()).toBeGreaterThanOrEqual(ALVO_DE_TOQUE_PX);
+    }
+    // Sem isto o teste passaria vazio numa rota que perdesse todas as setas, e
+    // um teste que não pode falhar é justamente o defeito que I8 nomeou. As
+    // rotas de conteúdo interno (`/pt/sobre/`, `/pt/como-e-feito/`) não têm
+    // `.seta` por desenho, então a exigência é por rota que tenha alguma.
+    if (rota === '/pt/' || rota === '/rota-que-nao-existe/') {
+      expect(medidas.length, `${rota}: ${medidas.join(' · ')}`).toBeGreaterThan(0);
+    }
+  });
+}
+
+test('o menu móvel abre e fecha sem JavaScript', async ({ page }) => {
+  await page.goto('/pt/');
+  const detalhes = page.locator('.menu-movel');
+  if (!(await detalhes.isVisible())) test.skip();
+  await expect(page.locator('.menu-movel__lista')).toBeHidden();
+  await page.locator('.menu-movel > summary').click();
+  await expect(page.locator('.menu-movel__lista')).toBeVisible();
 });
